@@ -2002,7 +2002,11 @@ async function createDbInstance(): Promise<DbInstance> {
     return db;
   }
 
-  const dataDir = path.resolve(process.cwd(), '.data', 'pglite');
+  const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+  const dataDir = isServerless
+    ? path.resolve('/tmp', 'ruang-visual-data', 'pglite')
+    : path.resolve(process.cwd(), '.data', 'pglite');
+
   fs.mkdirSync(dataDir, { recursive: true });
   const client = new PGlite(dataDir);
   await client.exec(DDL_SQL);
