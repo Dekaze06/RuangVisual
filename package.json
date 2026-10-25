@@ -21,6 +21,7 @@
   },
   "devDependencies": {
     "@types/pg": "^8.23.1",
+    "potrace": "^2.1.8",
     "typescript": "^7.0.2"
   }
 }

@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import Logo from '../components/Logo.astro';
 
 interface Props {
   title: string;
@@ -47,6 +48,9 @@ const teamPortals = [
       href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+    <link rel="alternate icon" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
   </head>
   <body class="min-h-screen bg-[#f3f2ee] text-[#121212] antialiased">
     <div class="min-h-screen flex flex-col lg:flex-row">
@@ -54,9 +58,7 @@ const teamPortals = [
       <aside class="no-print w-full lg:w-[272px] bg-[#181817] text-white shrink-0 flex flex-col border-b lg:border-b-0 lg:border-r border-white/10">
         <div class="p-6 border-b border-white/10 flex items-center justify-between">
           <a href="/" class="flex items-center gap-3">
-            <span class="w-6 h-6 inline-flex items-center justify-center border border-white text-[11px] font-semibold">
-              RV
-            </span>
+            <Logo class="w-7 h-7 shrink-0 text-white" />
             <div>
               <p class="text-xs font-semibold tracking-[0.18em] uppercase">Ruang Visual</p>
               <p class="text-[10px] text-white/45 tracking-wider uppercase">Studio Operating System</p>
