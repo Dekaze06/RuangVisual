@@ -1,0 +1,173 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  subtitle?: string;
+  activeNav:
+    | 'overview'
+    | 'bookings'
+    | 'crew-admin'
+    | 'printing'
+    | 'finance'
+    | 'catalog'
+    | 'crew-portal'
+    | 'photo-editor'
+    | 'video-editor';
+}
+
+const { title, subtitle = '', activeNav } = Astro.props;
+const notice = Astro.url.searchParams.get('notice');
+
+const adminLinks = [
+  { id: 'overview', label: 'Command Center', href: '/admin' },
+  { id: 'bookings', label: 'Booking, Kontrak & RAW', href: '/admin/bookings' },
+  { id: 'crew-admin', label: 'Crew Freelance & Gear', href: '/admin/crew' },
+  { id: 'printing', label: 'Tracking Percetakan', href: '/admin/percetakan' },
+  { id: 'finance', label: 'Keuangan & Laba Rugi', href: '/admin/keuangan' },
+  { id: 'catalog', label: 'Paket, S&K & CRM', href: '/admin/katalog' },
+];
+
+const teamPortals = [
+  { id: 'crew-portal', label: 'Portal Crew Lapangan', href: '/crew' },
+  { id: 'photo-editor', label: 'Meja Editor Foto (1 Org)', href: '/workspace/foto' },
+  { id: 'video-editor', label: 'Meja Editor Video (1 Org)', href: '/workspace/video' },
+];
+---
+
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title} — Backoffice Ruang Visual</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="min-h-screen bg-[#f3f2ee] text-[#121212] antialiased">
+    <div class="min-h-screen flex flex-col lg:flex-row">
+      <!-- Architectural Dark Obsidian Sidebar -->
+      <aside class="no-print w-full lg:w-[272px] bg-[#181817] text-white shrink-0 flex flex-col border-b lg:border-b-0 lg:border-r border-white/10">
+        <div class="p-6 border-b border-white/10 flex items-center justify-between">
+          <a href="/" class="flex items-center gap-3">
+            <span class="w-6 h-6 inline-flex items-center justify-center border border-white text-[11px] font-semibold">
+              RV
+            </span>
+            <div>
+              <p class="text-xs font-semibold tracking-[0.18em] uppercase">Ruang Visual</p>
+              <p class="text-[10px] text-white/45 tracking-wider uppercase">Studio Operating System</p>
+            </div>
+          </a>
+          <a href="/" class="text-[10px] uppercase tracking-[0.12em] text-white/60 hover:text-white border border-white/20 px-2.5 py-1">
+            Web ↗
+          </a>
+        </div>
+
+        <div class="p-5 space-y-7 flex-1 overflow-y-auto">
+          <div>
+            <p class="px-3 mb-2.5 text-[10px] font-semibold tracking-[0.16em] uppercase text-white/40">
+              Panel Admin & Owner
+            </p>
+            <nav class="space-y-1">
+              {
+                adminLinks.map((item) => (
+                  <a
+                    href={item.href}
+                    class:list={[
+                      'block px-3 py-2.5 text-xs tracking-wide transition border-l-2',
+                      activeNav === item.id
+                        ? 'bg-white text-[#121212] font-semibold border-white'
+                        : 'text-white/75 hover:text-white hover:bg-white/5 border-transparent',
+                    ]}
+                  >
+                    {item.label}
+                  </a>
+                ))
+              }
+            </nav>
+          </div>
+
+          <div>
+            <p class="px-3 mb-2.5 text-[10px] font-semibold tracking-[0.16em] uppercase text-white/40">
+              Workspace Tim Produksi
+            </p>
+            <nav class="space-y-1">
+              {
+                teamPortals.map((item) => (
+                  <a
+                    href={item.href}
+                    class:list={[
+                      'block px-3 py-2.5 text-xs tracking-wide transition border-l-2',
+                      activeNav === item.id
+                        ? 'bg-[#d5d2e2] text-[#121212] font-semibold border-white'
+                        : 'text-white/75 hover:text-white hover:bg-white/5 border-transparent',
+                    ]}
+                  >
+                    {item.label}
+                  </a>
+                ))
+              }
+            </nav>
+          </div>
+
+          <div class="pt-4 border-t border-white/10 px-3 space-y-2">
+            <p class="text-[10px] font-semibold tracking-[0.16em] uppercase text-white/40">Pintasan Klien</p>
+            <a href="/portal/RV-2610-001" class="block text-xs text-white/70 hover:text-white">
+              → Portal Klien (Arya & Nadine)
+            </a>
+            <a href="/galeri/arya-nadine" class="block text-xs text-white/70 hover:text-white">
+              → Galeri Proofing (PIN: 2408)
+            </a>
+            <a href="/booking" class="block text-xs text-white/70 hover:text-white">
+              → Form Booking Klien Baru
+            </a>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main Backoffice Content Area -->
+      <div class="flex-1 flex flex-col min-w-0">
+        <header class="bg-white border-b border-black/10 px-6 md:px-10 py-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 class="text-2xl md:text-[28px] font-normal tracking-[-0.03em] text-[#121212]">{title}</h1>
+            {subtitle && <p class="text-xs md:text-sm text-[#5e5d59] mt-1">{subtitle}</p>}
+          </div>
+          <div class="no-print flex flex-wrap items-center gap-3">
+            <a href="/api/export-finance.csv" class="btn-sq-outline-dark !py-2.5 !px-4 !text-[10px]">
+              Export Laporan (.CSV)
+            </a>
+            <a href="/booking" class="btn-sq-black !py-2.5 !px-4 !text-[10px]">
+              + Input Booking Baru
+            </a>
+          </div>
+        </header>
+
+        {
+          notice && (
+            <div class="no-print bg-[#1e1d1c] text-white px-6 md:px-10 py-3 flex items-center justify-between gap-4 text-xs">
+              <div class="flex items-center gap-2.5">
+                <span class="w-2 h-2 bg-emerald-400 inline-block" />
+                <span>{notice}</span>
+              </div>
+              <button
+                type="button"
+                onclick="this.parentElement.remove()"
+                class="text-white/60 hover:text-white text-[10px] uppercase tracking-widest"
+              >
+                Tutup ✕
+              </button>
+            </div>
+          )
+        }
+
+        <main class="p-6 md:p-10 space-y-8 flex-1">
+          <slot />
+        </main>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,347 @@
+---
+import EditorialLayout from '../../layouts/EditorialLayout.astro';
+import { getFullStudioSnapshot } from '../../lib/analytics';
+
+const { slug } = Astro.params;
+const snap = await getFullStudioSnapshot();
+
+const gallery = snap.galleries.find((g) => g.slug === slug) || snap.galleries[0];
+const booking = snap.bookings.find((b) => b.id === gallery.bookingId) || snap.bookings[0];
+const photos = snap.galleryPhotos.filter((p) => p.galleryId === gallery.id);
+
+const enteredPin = Astro.url.searchParams.get('pin') || '';
+const isClientMaster = enteredPin === gallery.clientPin;
+
+const editSelectedCount = photos.filter((p) => p.selectedForEdit).length;
+const albumSelectedCount = photos.filter((p) => p.selectedForAlbum).length;
+const coverPhoto = photos.find((p) => p.isCoverChoice);
+---
+
+<EditorialLayout title={`${gallery.title} — Galeri Ruang Visual`} headerTheme="dark">
+  <!-- Editorial Gallery Cover Header -->
+  <section class="bg-[#181817] text-white py-14 md:py-20 border-b border-white/10">
+    <div class="max-w-[1380px] mx-auto px-5 md:px-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-end">
+      <div class="lg:col-span-7 space-y-3">
+        <div class="flex flex-wrap items-center gap-3">
+          <span class="eyebrow-label text-white/55">Interactive Client Gallery</span>
+          {
+            gallery.watermarkActive ? (
+              <span class="bg-amber-500/20 text-amber-200 border border-amber-400/30 text-[10px] px-2.5 py-0.5 uppercase tracking-wider">
+                Watermark Aktif (Menunggu Pelunasan)
+              </span>
+            ) : (
+              <span class="bg-emerald-500/20 text-emerald-200 border border-emerald-400/30 text-[10px] px-2.5 py-0.5 uppercase tracking-wider">
+                High-Res Terbuka • Bebas Watermark
+              </span>
+            )
+          }
+        </div>
+        <h1 class="display-lg text-white">{gallery.title}</h1>
+        <p class="text-xs md:text-sm text-white/65">
+          Kode Booking: <a href={`/portal/${booking.bookingCode}`} class="underline text-white">{booking.bookingCode}</a> •{' '}
+          {isClientMaster ? 'Mode Klien Utama Aktif (Dapat Memilih Foto Edit & Cetak)' : 'Mode Pratinjau Tamu (Masukkan PIN Klien untuk Memilih Foto)'}
+        </p>
+      </div>
+
+      <!-- PIN Access Box -->
+      <div class="lg:col-span-5">
+        {
+          !isClientMaster ? (
+            <form method="GET" action={`/galeri/${gallery.slug}`} class="bg-[#252422] p-5 border border-white/15 space-y-2.5">
+              <div class="flex items-center justify-between text-[10px] uppercase tracking-[0.14em] text-white/65">
+                <span>Buka Mode Proofing Klien Utama</span>
+                <span>Demo PIN: <strong class="text-white">{gallery.clientPin}</strong></span>
+              </div>
+              <div class="flex gap-2">
+                <input
+                  type="text"
+                  name="pin"
+                  value={gallery.clientPin}
+                  placeholder="Masukkan 4 Digit PIN Klien"
+                  class="flex-1 px-3.5 py-2.5 bg-white text-[#121212] text-sm font-mono"
+                />
+                <button type="submit" class="btn-sq-white !py-2.5 !px-5 cursor-pointer">
+                  Buka PIN →
+                </button>
+              </div>
+            </form>
+          ) : (
+            <div class="bg-[#252422] p-5 border border-emerald-400/40 flex items-center justify-between gap-4">
+              <div>
+                <p class="text-[10px] uppercase tracking-[0.15em] text-emerald-300">✓ PIN Klien Terverifikasi</p>
+                <p class="text-xs text-white/80 mt-0.5">
+                  Klik tombol di bawah tiap foto untuk memilih kuota Retouch, Album, & Cover.
+                </p>
+              </div>
+              <a href={`/galeri/${gallery.slug}`} class="text-[10px] uppercase tracking-wider underline text-white/60">
+                Mode Tamu
+              </a>
+            </div>
+          )
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- Sticky Smart Selection Quota Counter Bar -->
+  {
+    isClientMaster && (
+      <section class="bg-[#f3f2ee] border-b border-black/15 sticky top-[72px] z-30">
+        <div class="max-w-[1380px] mx-auto px-5 md:px-10 py-4 flex flex-wrap items-center justify-between gap-4">
+          <div class="flex flex-wrap items-center gap-6 text-xs">
+            <div>
+              <span class="text-[#5e5d59] uppercase tracking-wider text-[10px] block">Kuota Foto Retouch</span>
+              <strong class="text-base tabular-nums">
+                {editSelectedCount} / {gallery.editQuota} Foto
+              </strong>
+            </div>
+            <div class="h-7 w-px bg-black/15 hidden sm:block" />
+            <div>
+              <span class="text-[#5e5d59] uppercase tracking-wider text-[10px] block">Masuk Album Cetak</span>
+              <strong class="text-base tabular-nums">
+                {albumSelectedCount} / {gallery.albumQuota} Foto
+              </strong>
+            </div>
+            <div class="h-7 w-px bg-black/15 hidden sm:block" />
+            <div>
+              <span class="text-[#5e5d59] uppercase tracking-wider text-[10px] block">Cover Utama</span>
+              <strong class="text-sm font-mono">{coverPhoto ? coverPhoto.filename : 'Belum Dipilih'}</strong>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-3">
+            <form method="POST" action="/api/actions">
+              <input type="hidden" name="action" value="add_gallery_quota" />
+              <input type="hidden" name="galleryId" value={gallery.id} />
+              <input type="hidden" name="redirectTo" value={`/galeri/${gallery.slug}?pin=${gallery.clientPin}`} />
+              <button type="submit" class="btn-sq-outline-dark !py-2.5 !px-4 !text-[10px] cursor-pointer">
+                + Tambah 15 Kuota Foto (Rp 450rb)
+              </button>
+            </form>
+
+            <form method="POST" action="/api/actions">
+              <input type="hidden" name="action" value="submit_gallery_selection" />
+              <input type="hidden" name="galleryId" value={gallery.id} />
+              <input type="hidden" name="redirectTo" value={`/galeri/${gallery.slug}?pin=${gallery.clientPin}`} />
+              <button type="submit" class="btn-sq-black !py-2.5 !px-5 !text-[10px] cursor-pointer">
+                {gallery.selectionSubmitted ? '✓ Pilihan Sudah Dikirim (Update)' : 'Kunci & Kirim ke Editor Foto →'}
+              </button>
+            </form>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  <!-- Gallery Photo Grid -->
+  <section class="bg-white py-14">
+    <div class="max-w-[1380px] mx-auto px-5 md:px-10 space-y-16">
+      {
+        photos.length === 0 ? (
+          <div class="p-14 border border-black/12 bg-[#fbfaf7] text-center space-y-2">
+            <p class="text-lg font-medium">Foto pratinjau sedang disiapkan oleh Editor Foto kami.</p>
+            <p class="text-xs text-[#5e5d59]">Anda akan menerima notifikasi WhatsApp segera setelah galeri siap dipilih.</p>
+          </div>
+        ) : (
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {photos.map((photo) => (
+              <article
+                class:list={[
+                  'border transition flex flex-col justify-between bg-[#fbfaf7]',
+                  photo.selectedForEdit ? 'border-2 border-[#121212]' : 'border-black/12',
+                ]}
+              >
+                <div>
+                  <div class="relative aspect-[4/5] overflow-hidden bg-[#181817]">
+                    <img src={photo.imageUrl} alt={photo.momentLabel} class="w-full h-full object-cover" loading="lazy" />
+
+                    {/* Dynamic Watermark Protection when Unpaid */}
+                    {gallery.watermarkActive && (
+                      <div class="absolute inset-0 watermark-overlay flex items-center justify-center pointer-events-none select-none">
+                        <span class="border border-white/35 bg-black/30 backdrop-blur-[1px] text-white/65 px-3 py-1 text-[10px] tracking-[0.25em] uppercase -rotate-12">
+                          RUANG VISUAL • PREVIEW
+                        </span>
+                      </div>
+                    )}
+
+                    <div class="absolute top-2.5 left-2.5 flex flex-wrap gap-1.5">
+                      {photo.isCoverChoice && (
+                        <span class="bg-amber-400 text-[#121212] text-[9px] font-bold uppercase tracking-wider px-2 py-0.5">
+                          ★ Cover Utama
+                        </span>
+                      )}
+                      {photo.selectedForAlbum && (
+                        <span class="bg-[#121212] text-white text-[9px] font-semibold uppercase tracking-wider px-2 py-0.5">
+                          Album
+                        </span>
+                      )}
+                    </div>
+
+                    <span class="absolute bottom-2.5 right-2.5 bg-white/95 text-[#121212] text-[10px] font-mono px-2 py-0.5 font-semibold">
+                      {photo.filename}
+                    </span>
+                  </div>
+
+                  <div class="p-4 space-y-1">
+                    <p class="text-xs font-semibold">{photo.momentLabel}</p>
+                    {photo.clientNote && <p class="text-[11px] text-[#5e5d59] italic">Catatan: "{photo.clientNote}"</p>}
+                  </div>
+                </div>
+
+                {isClientMaster && (
+                  <div class="p-4 pt-0 space-y-2.5">
+                    <div class="grid grid-cols-3 gap-1.5 text-[10px]">
+                      <form method="POST" action="/api/actions">
+                        <input type="hidden" name="action" value="update_gallery_photo" />
+                        <input type="hidden" name="photoId" value={photo.id} />
+                        <input type="hidden" name="field" value="edit" />
+                        <input type="hidden" name="redirectTo" value={`/galeri/${gallery.slug}?pin=${gallery.clientPin}`} />
+                        <button
+                          type="submit"
+                          class:list={[
+                            'w-full py-2 font-semibold uppercase tracking-wider border cursor-pointer',
+                            photo.selectedForEdit
+                              ? 'bg-[#121212] text-white border-[#121212]'
+                              : 'bg-white text-[#121212] border-black/20 hover:border-[#121212]',
+                          ]}
+                        >
+                          {photo.selectedForEdit ? '✓ Edit' : '+ Edit'}
+                        </button>
+                      </form>
+
+                      <form method="POST" action="/api/actions">
+                        <input type="hidden" name="action" value="update_gallery_photo" />
+                        <input type="hidden" name="photoId" value={photo.id} />
+                        <input type="hidden" name="field" value="album" />
+                        <input type="hidden" name="redirectTo" value={`/galeri/${gallery.slug}?pin=${gallery.clientPin}`} />
+                        <button
+                          type="submit"
+                          class:list={[
+                            'w-full py-2 font-semibold uppercase tracking-wider border cursor-pointer',
+                            photo.selectedForAlbum
+                              ? 'bg-[#121212] text-white border-[#121212]'
+                              : 'bg-white text-[#121212] border-black/20 hover:border-[#121212]',
+                          ]}
+                        >
+                          {photo.selectedForAlbum ? '✓ Album' : '+ Album'}
+                        </button>
+                      </form>
+
+                      <form method="POST" action="/api/actions">
+                        <input type="hidden" name="action" value="update_gallery_photo" />
+                        <input type="hidden" name="photoId" value={photo.id} />
+                        <input type="hidden" name="field" value="cover" />
+                        <input type="hidden" name="redirectTo" value={`/galeri/${gallery.slug}?pin=${gallery.clientPin}`} />
+                        <button
+                          type="submit"
+                          class:list={[
+                            'w-full py-2 font-semibold uppercase tracking-wider border cursor-pointer',
+                            photo.isCoverChoice
+                              ? 'bg-amber-400 text-[#121212] border-amber-500'
+                              : 'bg-white text-[#121212] border-black/20 hover:border-[#121212]',
+                          ]}
+                        >
+                          Cover
+                        </button>
+                      </form>
+                    </div>
+
+                    <form method="POST" action="/api/actions" class="flex gap-1.5">
+                      <input type="hidden" name="action" value="update_gallery_photo" />
+                      <input type="hidden" name="photoId" value={photo.id} />
+                      <input type="hidden" name="field" value="note" />
+                      <input type="hidden" name="redirectTo" value={`/galeri/${gallery.slug}?pin=${gallery.clientPin}`} />
+                      <input
+                        type="text"
+                        name="clientNote"
+                        value={photo.clientNote}
+                        placeholder="Catatan retouch..."
+                        class="flex-1 px-2.5 py-1.5 bg-white border border-black/15 text-[11px]"
+                      />
+                      <button type="submit" class="px-2.5 py-1.5 bg-[#e5e4df] text-[10px] font-semibold uppercase cursor-pointer">
+                        Simpan
+                      </button>
+                    </form>
+                  </div>
+                )}
+              </article>
+            ))}
+          </div>
+        )
+      }
+
+      <!-- Album Layout Spread Approval Section (Gatekeeper for Print Production!) -->
+      {
+        isClientMaster && gallery.albumQuota > 0 && (
+          <div class="bg-[#e5e4df] border border-black/15 p-8 md:p-12 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+            <div class="lg:col-span-6 space-y-4">
+              <span class="eyebrow-label text-[#5e5d59]">Print Production Gatekeeper</span>
+              <h2 class="display-md">Persetujuan Desain Layout Album Cetak</h2>
+              <p class="text-xs md:text-sm text-[#3c3b38] leading-relaxed">
+                Sesuai standar anti-salah cetak Ruang Visual, mitra percetakan tidak akan memulai proses cetak sebelum
+                Anda mengeklik <strong>Setuju Naik Cetak</strong> pada draft tata letak di samping.
+              </p>
+              <p class="text-xs font-semibold">
+                Status Saat Ini:{' '}
+                <span class="uppercase px-2.5 py-1 bg-white border border-black/15 ml-1">
+                  {gallery.albumLayoutStatus}
+                </span>
+              </p>
+
+              <form method="POST" action="/api/actions" class="space-y-3 pt-2">
+                <input type="hidden" name="action" value="review_album_layout" />
+                <input type="hidden" name="galleryId" value={gallery.id} />
+                <input type="hidden" name="redirectTo" value={`/galeri/${gallery.slug}?pin=${gallery.clientPin}`} />
+                <textarea
+                  name="albumRevisionNote"
+                  rows="2"
+                  placeholder="Tulis catatan halaman jika ada revisi, atau konfirmasi persetujuan cetak..."
+                  class="w-full p-3 bg-white border border-black/20 text-xs">{gallery.albumRevisionNote}</textarea>
+                <div class="flex flex-wrap gap-3">
+                  <button
+                    type="submit"
+                    name="decision"
+                    value="APPROVE"
+                    class="btn-sq-black cursor-pointer"
+                  >
+                    ✓ Setuju Naik Cetak (Approve to Print)
+                  </button>
+                  <button
+                    type="submit"
+                    name="decision"
+                    value="REVISE"
+                    class="btn-sq-outline-dark bg-white cursor-pointer"
+                  >
+                    Ajukan Revisi Layout
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <div class="lg:col-span-6 bg-white p-5 border border-black/15 space-y-3 shadow-sm">
+              <div class="flex items-center justify-between text-[10px] uppercase tracking-[0.14em] text-[#5e5d59]">
+                <span>Mockup Spread Halaman 01 — 10</span>
+                <span>25x30cm Layflat Magazine</span>
+              </div>
+              <div class="grid grid-cols-2 gap-1 bg-[#f3f2ee] p-3 border border-black/10 aspect-[16/9]">
+                <img
+                  src={photos[0]?.imageUrl || booking.coverImage}
+                  alt="Spread Left"
+                  class="w-full h-full object-cover"
+                />
+                <img
+                  src={photos[1]?.imageUrl || booking.coverImage}
+                  alt="Spread Right"
+                  class="w-full h-full object-cover"
+                />
+              </div>
+              <p class="text-[11px] text-center text-[#5e5d59]">
+                Teks Grafir Cover Terdaftar: <strong class="text-[#121212]">{JSON.parse(booking.worksheetJson || '{}').engravingText || booking.clientName}</strong>
+              </p>
+            </div>
+          </div>
+        )
+      }
+    </div>
+  </section>
+</EditorialLayout>

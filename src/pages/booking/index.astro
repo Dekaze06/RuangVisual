@@ -1,0 +1,474 @@
+---
+import EditorialLayout from '../../layouts/EditorialLayout.astro';
+import { getFullStudioSnapshot } from '../../lib/analytics';
+import { formatRupiah } from '../../lib/format';
+
+const snap = await getFullStudioSnapshot();
+const preselectedPkg = Astro.url.searchParams.get('paket') || '';
+const preselectedCat = Astro.url.searchParams.get('kategori') || 'wedding';
+const preselectedDate = Astro.url.searchParams.get('tanggal') || '2026-11-15';
+
+const defaultPkg =
+  snap.packages.find((p) => p.id === preselectedPkg) ||
+  snap.packages.find((p) => p.categorySlug === preselectedCat) ||
+  snap.packages[0];
+
+const terms = snap.terms[0];
+const clauses: Array<{ no: string; heading: string; body: string }> = terms ? JSON.parse(terms.clausesJson) : [];
+---
+
+<EditorialLayout title="Booking Layanan & Kontrak Digital — Ruang Visual" headerTheme="light">
+  <section class="bg-[#1e1d1c] text-white py-14 md:py-20">
+    <div class="max-w-[1380px] mx-auto px-5 md:px-10 space-y-3">
+      <p class="eyebrow-label text-white/55">Online Booking & Digital Contract</p>
+      <h1 class="display-lg text-white">Kunci jadwal & kustomisasi paket</h1>
+      <p class="text-xs md:text-sm text-white/70 max-w-2xl">
+        Lengkapi detail acara, sesuaikan add-on, setujui Syarat & Ketentuan secara elektronik, lalu pilih metode
+        pembayaran otomatis (QRIS/VA) atau transfer manual.
+      </p>
+    </div>
+  </section>
+
+  <section class="bg-[#f3f2ee] py-12 md:py-16">
+    <div class="max-w-[1380px] mx-auto px-5 md:px-10">
+      <form id="booking-form" method="POST" action="/api/actions" class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+        <input type="hidden" name="action" value="create_booking" />
+        <input type="hidden" name="selectedAddons" id="selected-addons-input" value="" />
+        <input type="hidden" name="signatureDataUrl" id="signature-data-input" value="SIGNED_DIGITAL_CONSENT" />
+
+        <!-- Left Form Steps (8 Columns) -->
+        <div class="lg:col-span-8 space-y-8">
+          <!-- Step 1: Pilih Paket Utama -->
+          <div class="bg-white border border-black/12 p-6 md:p-8 space-y-5">
+            <div class="flex items-center justify-between border-b border-black/10 pb-4">
+              <h2 class="text-lg font-medium tracking-[-0.02em]">01. Pilih Paket Dokumentasi Utama</h2>
+              <span class="eyebrow-label text-[#5e5d59]">Wedding • Prewedding • Wisuda • Event</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {
+                snap.packages.map((pkg) => {
+                  const cat = snap.categories.find((c) => c.slug === pkg.categorySlug);
+                  const dpPct = cat?.defaultDpPercent || 35;
+                  return (
+                    <label class="cursor-pointer block border border-black/15 p-4 hover:border-[#121212] transition has-[:checked]:border-2 has-[:checked]:border-[#121212] has-[:checked]:bg-[#fbfaf7]">
+                      <div class="flex items-start justify-between gap-2">
+                        <div>
+                          <span class="text-[10px] uppercase tracking-[0.14em] text-[#5e5d59]">{pkg.categorySlug}</span>
+                          <p class="font-semibold text-sm mt-0.5">{pkg.name}</p>
+                        </div>
+                        <input
+                          type="radio"
+                          name="packageId"
+                          value={pkg.id}
+                          checked={pkg.id === defaultPkg.id}
+                          data-price={pkg.price}
+                          data-name={pkg.name}
+                          data-dp={dpPct}
+                          class="pkg-radio mt-1 accent-[#121212]"
+                        />
+                      </div>
+                      <p class="text-lg font-normal tabular-nums mt-2">{formatRupiah(pkg.price)}</p>
+                      <p class="text-[11px] text-[#5e5d59] mt-1">
+                        {pkg.durationHours} Jam • {pkg.editedPhotoQuota} Foto Edit • {pkg.printDeliverables}
+                      </p>
+                    </label>
+                  );
+                })
+              }
+            </div>
+          </div>
+
+          <!-- Step 2: Add-ons & Zona Lokasi -->
+          <div class="bg-white border border-black/12 p-6 md:p-8 space-y-6">
+            <div class="border-b border-black/10 pb-4">
+              <h2 class="text-lg font-medium tracking-[-0.02em]">02. Kustomisasi Add-on & Zona Lokasi</h2>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {
+                snap.addons.map((ad) => (
+                  <label class="flex items-center justify-between gap-3 p-3.5 border border-black/12 hover:border-[#121212] cursor-pointer text-xs">
+                    <div class="flex items-center gap-2.5">
+                      <input
+                        type="checkbox"
+                        value={ad.id}
+                        data-price={ad.price}
+                        data-name={ad.name}
+                        class="addon-check accent-[#121212]"
+                      />
+                      <span>
+                        <strong class="block text-[#121212]">{ad.name}</strong>
+                        <span class="text-[#5e5d59]">{ad.unitLabel}</span>
+                      </span>
+                    </div>
+                    <span class="font-semibold tabular-nums shrink-0">+{formatRupiah(ad.price)}</span>
+                  </label>
+                ))
+              }
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+              <div>
+                <label class="block text-[11px] uppercase tracking-[0.12em] font-semibold mb-1.5">
+                  Zona Transportasi Kru Lapangan
+                </label>
+                <select
+                  name="transportZoneId"
+                  id="zone-select"
+                  class="w-full px-3.5 py-3 border border-black/20 bg-white text-sm"
+                >
+                  {
+                    snap.zones.map((z) => (
+                      <option value={z.id} data-fee={z.transportFee}>
+                        {z.regionName} ({z.transportFee === 0 ? 'Gratis' : '+' + formatRupiah(z.transportFee)})
+                      </option>
+                    ))
+                  }
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] uppercase tracking-[0.12em] font-semibold mb-1.5">
+                  Kode Voucher Promo (Opsional)
+                </label>
+                <input
+                  type="text"
+                  name="voucherCode"
+                  id="voucher-input"
+                  placeholder="Coba: WEDDINGFAIR / WISUDA26 / RUANGVISUAL"
+                  class="w-full px-3.5 py-3 border border-black/20 bg-white text-sm uppercase"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 3: Detail Acara & Identitas Klien -->
+          <div class="bg-white border border-black/12 p-6 md:p-8 space-y-5">
+            <div class="border-b border-black/10 pb-4">
+              <h2 class="text-lg font-medium tracking-[-0.02em]">03. Waktu, Lokasi & Identitas Pemesan</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-medium mb-1">Nama Lengkap Klien / Pasangan *</label>
+                <input
+                  type="text"
+                  name="clientName"
+                  required
+                  placeholder="Contoh: Bagus & Laras"
+                  class="w-full px-3.5 py-3 border border-black/20 text-sm"
+                />
+              </div>
+              <div>
+                <label class="block text-xs font-medium mb-1">Judul Acara *</label>
+                <input
+                  type="text"
+                  name="eventTitle"
+                  required
+                  placeholder="Contoh: The Wedding of Bagus & Laras"
+                  class="w-full px-3.5 py-3 border border-black/20 text-sm"
+                />
+              </div>
+              <div>
+                <label class="block text-xs font-medium mb-1">Nomor WhatsApp Aktif *</label>
+                <input
+                  type="tel"
+                  name="clientPhone"
+                  required
+                  placeholder="0812xxxxxxxx"
+                  class="w-full px-3.5 py-3 border border-black/20 text-sm"
+                />
+              </div>
+              <div>
+                <label class="block text-xs font-medium mb-1">Alamat Email (Untuk Kontrak & Galeri) *</label>
+                <input
+                  type="email"
+                  name="clientEmail"
+                  required
+                  placeholder="nama@email.com"
+                  class="w-full px-3.5 py-3 border border-black/20 text-sm"
+                />
+              </div>
+              <div>
+                <label class="block text-xs font-medium mb-1">Tanggal Acara *</label>
+                <input
+                  type="date"
+                  name="eventDate"
+                  value={preselectedDate}
+                  required
+                  class="w-full px-3.5 py-3 border border-black/20 text-sm"
+                />
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-medium mb-1">Jam Mulai</label>
+                  <input type="time" name="startTime" value="08:00" class="w-full px-3.5 py-3 border border-black/20 text-sm" />
+                </div>
+                <div>
+                  <label class="block text-xs font-medium mb-1">Jam Selesai</label>
+                  <input type="time" name="endTime" value="16:00" class="w-full px-3.5 py-3 border border-black/20 text-sm" />
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs font-medium mb-1">Nama Venue / Gedung / Kampus *</label>
+                <input
+                  type="text"
+                  name="venueName"
+                  required
+                  placeholder="Contoh: Balai Kartini / Kampus UI"
+                  class="w-full px-3.5 py-3 border border-black/20 text-sm"
+                />
+              </div>
+              <div>
+                <label class="block text-xs font-medium mb-1">Tautan Google Maps Lokasi</label>
+                <input
+                  type="url"
+                  name="venueMapsUrl"
+                  placeholder="https://maps.google.com/..."
+                  class="w-full px-3.5 py-3 border border-black/20 text-sm"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 4: Kontrak S&K, Privasi Portofolio & Tanda Tangan Digital -->
+          <div class="bg-white border border-black/12 p-6 md:p-8 space-y-6">
+            <div class="flex items-center justify-between border-b border-black/10 pb-4">
+              <h2 class="text-lg font-medium tracking-[-0.02em]">
+                04. Persetujuan Syarat & Ketentuan ({terms?.versionCode})
+              </h2>
+              <a href="/syarat-ketentuan" target="_blank" class="text-xs underline">Buka Layar Penuh ↗</a>
+            </div>
+
+            <div class="max-h-48 overflow-y-auto bg-[#f6f4ef] p-4 border border-black/10 space-y-3 text-xs text-[#3b3a37]">
+              {
+                clauses.map((c) => (
+                  <div>
+                    <p class="font-semibold text-[#121212]">
+                      Pasal {c.no} — {c.heading}
+                    </p>
+                    <p class="leading-relaxed mt-0.5">{c.body}</p>
+                  </div>
+                ))
+              }
+            </div>
+
+            <!-- Portfolio Privacy Consent -->
+            <div class="space-y-2.5 pt-2">
+              <p class="text-xs font-semibold uppercase tracking-[0.12em]">Preferensi Publikasi Portofolio:</p>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                <label class="p-3.5 border border-black/15 cursor-pointer flex items-start gap-2.5 has-[:checked]:border-[#121212] has-[:checked]:bg-[#fbfaf7]">
+                  <input type="radio" name="allowPortfolioPublish" value="true" checked class="mt-0.5 accent-[#121212]" />
+                  <span>
+                    <strong class="block">Izinkan Publikasi Portofolio</strong>
+                    <span class="text-[#5e5d59]">Karya terbaik dapat ditampilkan di showcase resmi Ruang Visual.</span>
+                  </span>
+                </label>
+                <label class="p-3.5 border border-black/15 cursor-pointer flex items-start gap-2.5 has-[:checked]:border-red-800 has-[:checked]:bg-red-50/40">
+                  <input type="radio" name="allowPortfolioPublish" value="false" class="mt-0.5 accent-red-800" />
+                  <span>
+                    <strong class="block text-red-900">Private Session (Dilarang Publikasi)</strong>
+                    <span class="text-[#5e5d59]">Kunci privasi penuh — kru & editor dilarang upload ke sosmed/web.</span>
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Digital Signature Canvas -->
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <label class="text-xs font-semibold uppercase tracking-[0.12em]">
+                  Tanda Tangan Digital Klien (Goreskan di Kotak Bawah):
+                </label>
+                <button type="button" id="clear-sig" class="text-[11px] underline text-[#5e5d59] hover:text-[#121212] cursor-pointer">
+                  Ulangi Tanda Tangan
+                </button>
+              </div>
+              <canvas
+                id="sig-canvas"
+                width="640"
+                height="150"
+                class="w-full h-[140px] bg-[#fbfaf7] border border-black/25 cursor-crosshair touch-none"
+              ></canvas>
+            </div>
+
+            <label class="flex items-start gap-3 text-xs cursor-pointer">
+              <input type="checkbox" required class="mt-0.5 accent-[#121212]" />
+              <span>
+                Saya telah membaca, memahami, dan menyetujui seluruh klausul <strong>Syarat & Ketentuan Ruang Visual ({terms?.versionCode})</strong>
+                secara sah dan mengikat.
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Right Sticky Summary & Payment Plan (4 Columns) -->
+        <aside class="lg:col-span-4 lg:sticky lg:top-[92px] bg-[#181817] text-white p-6 md:p-8 space-y-6">
+          <div class="border-b border-white/15 pb-4">
+            <p class="eyebrow-label text-white/50">Ringkasan Kontrak & Biaya</p>
+            <p id="sum-pkg-name" class="text-xl font-normal tracking-[-0.02em] mt-1">{defaultPkg.name}</p>
+          </div>
+
+          <div class="space-y-3 text-xs border-b border-white/15 pb-5">
+            <div class="flex justify-between">
+              <span class="text-white/65">Harga Paket Dasar</span>
+              <span id="sum-base" class="tabular-nums font-medium">{formatRupiah(defaultPkg.price)}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-white/65">Total Add-on Tambahan</span>
+              <span id="sum-addons" class="tabular-nums font-medium">Rp 0</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-white/65">Biaya Zona Transport</span>
+              <span id="sum-zone" class="tabular-nums font-medium">Rp 0</span>
+            </div>
+            <div class="flex justify-between text-emerald-400">
+              <span>Potongan Voucher</span>
+              <span id="sum-discount" class="tabular-nums font-medium">-Rp 0</span>
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <div class="flex justify-between items-baseline">
+              <span class="text-xs uppercase tracking-[0.14em] text-white/60">Total Nilai Kontrak</span>
+              <span id="sum-grand" class="text-2xl font-normal tabular-nums">{formatRupiah(defaultPkg.price)}</span>
+            </div>
+          </div>
+
+          <!-- Skema Pembayaran -->
+          <div class="space-y-2.5 pt-2 border-t border-white/15">
+            <p class="text-[10px] uppercase tracking-[0.15em] text-white/55">Pilih Skema Pembayaran Awal</p>
+            <label class="flex items-center justify-between p-3 border border-white/20 cursor-pointer text-xs has-[:checked]:bg-white has-[:checked]:text-[#121212]">
+              <span class="flex items-center gap-2">
+                <input type="radio" name="paymentPlan" value="DP" checked class="plan-radio accent-[#121212]" />
+                <span class="font-semibold">Bayar Booking Fee (DP)</span>
+              </span>
+              <span id="sum-dp-amount" class="tabular-nums font-semibold">
+                {formatRupiah(Math.round(defaultPkg.price * 0.35))}
+              </span>
+            </label>
+            <label class="flex items-center justify-between p-3 border border-white/20 cursor-pointer text-xs has-[:checked]:bg-white has-[:checked]:text-[#121212]">
+              <span class="flex items-center gap-2">
+                <input type="radio" name="paymentPlan" value="FULL" class="plan-radio accent-[#121212]" />
+                <span class="font-semibold">Bayar Lunas Langsung (100%)</span>
+              </span>
+              <span id="sum-full-amount" class="tabular-nums font-semibold">{formatRupiah(defaultPkg.price)}</span>
+            </label>
+          </div>
+
+          <button type="submit" class="btn-sq-white w-full">
+            Terbitkan Kontrak & Lanjut Bayar →
+          </button>
+
+          <p class="text-[11px] text-white/50 leading-relaxed">
+            Di halaman berikutnya Anda dapat memilih pembayaran otomatis via <strong>QRIS / Virtual Account</strong> atau
+            <strong>Transfer Bank Manual</strong>.
+          </p>
+        </aside>
+      </form>
+    </div>
+  </section>
+
+  <script is:inline>
+    const fmtIdr = (n) => 'Rp ' + Math.round(n).toLocaleString('id-ID');
+    const voucherMap = {
+      WEDDINGFAIR: { discount: 1000000, min: 10000000 },
+      WISUDA26: { discount: 150000, min: 1000000 },
+      RUANGVISUAL: { discount: 500000, min: 4500000 },
+    };
+
+    function recalcSummary() {
+      const checkedPkg = document.querySelector('.pkg-radio:checked');
+      const base = Number(checkedPkg?.getAttribute('data-price') || 0);
+      const pkgName = checkedPkg?.getAttribute('data-name') || '';
+      const dpPct = Number(checkedPkg?.getAttribute('data-dp') || 35);
+
+      let addonsTotal = 0;
+      const addonIds = [];
+      document.querySelectorAll('.addon-check:checked').forEach((chk) => {
+        addonsTotal += Number(chk.getAttribute('data-price') || 0);
+        addonIds.push(chk.value);
+      });
+      document.getElementById('selected-addons-input').value = addonIds.join(',');
+
+      const zoneSel = document.getElementById('zone-select');
+      const zoneOpt = zoneSel?.options[zoneSel.selectedIndex];
+      const zoneFee = Number(zoneOpt?.getAttribute('data-fee') || 0);
+
+      const code = (document.getElementById('voucher-input')?.value || '').trim().toUpperCase();
+      let discount = 0;
+      if (voucherMap[code] && base + addonsTotal >= voucherMap[code].min) {
+        discount = voucherMap[code].discount;
+      }
+
+      const grand = Math.max(0, base + addonsTotal + zoneFee - discount);
+      const dpAmount = Math.round((grand * dpPct) / 100);
+
+      document.getElementById('sum-pkg-name').textContent = pkgName;
+      document.getElementById('sum-base').textContent = fmtIdr(base);
+      document.getElementById('sum-addons').textContent = fmtIdr(addonsTotal);
+      document.getElementById('sum-zone').textContent = fmtIdr(zoneFee);
+      document.getElementById('sum-discount').textContent = '-' + fmtIdr(discount);
+      document.getElementById('sum-grand').textContent = fmtIdr(grand);
+      document.getElementById('sum-dp-amount').textContent = fmtIdr(dpAmount);
+      document.getElementById('sum-full-amount').textContent = fmtIdr(grand);
+    }
+
+    document.querySelectorAll('.pkg-radio, .addon-check, #zone-select, #voucher-input').forEach((el) => {
+      el.addEventListener('change', recalcSummary);
+      el.addEventListener('input', recalcSummary);
+    });
+    recalcSummary();
+
+    // Canvas Digital Signature Pad
+    const canvas = document.getElementById('sig-canvas');
+    const sigInput = document.getElementById('signature-data-input');
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      ctx.strokeStyle = '#121212';
+      ctx.lineWidth = 2.2;
+      ctx.lineCap = 'round';
+      let drawing = false;
+
+      const getPos = (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return {
+          x: ((clientX - rect.left) / rect.width) * canvas.width,
+          y: ((clientY - rect.top) / rect.height) * canvas.height,
+        };
+      };
+
+      const start = (e) => {
+        drawing = true;
+        const p = getPos(e);
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+      };
+      const move = (e) => {
+        if (!drawing) return;
+        e.preventDefault();
+        const p = getPos(e);
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+        sigInput.value = canvas.toDataURL('image/png');
+      };
+      const stop = () => {
+        drawing = false;
+      };
+
+      canvas.addEventListener('mousedown', start);
+      canvas.addEventListener('mousemove', move);
+      window.addEventListener('mouseup', stop);
+      canvas.addEventListener('touchstart', start, { passive: false });
+      canvas.addEventListener('touchmove', move, { passive: false });
+      window.addEventListener('touchend', stop);
+
+      document.getElementById('clear-sig')?.addEventListener('click', () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        sigInput.value = 'SIGNED_DIGITAL_CONSENT';
+      });
+    }
+  </script>
+</EditorialLayout>

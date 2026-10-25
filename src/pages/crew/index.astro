@@ -1,0 +1,273 @@
+---
+import BackofficeLayout from '../../layouts/BackofficeLayout.astro';
+import { getFullStudioSnapshot } from '../../lib/analytics';
+import { formatRupiah, formatShortDate } from '../../lib/format';
+
+const snap = await getFullStudioSnapshot();
+const selectedCrewId = Astro.url.searchParams.get('crew') || snap.freelancers[0]?.id;
+const activeCrew = snap.freelancers.find((f) => f.id === selectedCrewId) || snap.freelancers[0];
+
+const assignments = snap.crewAssignments.filter((ca) => ca.freelancerId === activeCrew.id);
+const blockedDates: string[] = JSON.parse(activeCrew.blockedDatesJson || '[]');
+
+const lockedTotal = assignments
+  .filter((a) => a.payoutStatus === 'LOCKED_WAITING_RAW' && a.offerStatus !== 'DECLINED')
+  .reduce((s, a) => s + a.feeAmount + a.transportAllowance, 0);
+const readyTotal = assignments
+  .filter((a) => a.payoutStatus === 'READY_TO_PAY')
+  .reduce((s, a) => s + a.feeAmount + a.transportAllowance, 0);
+const paidTotal = assignments
+  .filter((a) => a.payoutStatus === 'PAID')
+  .reduce((s, a) => s + a.feeAmount + a.transportAllowance, 0);
+---
+
+<BackofficeLayout
+  title={`Portal Crew Freelance — ${activeCrew.name}`}
+  subtitle={`${activeCrew.specialties} • ${activeCrew.gearList}`}
+  activeNav="crew-portal"
+>
+  <!-- Freelancer Persona Switcher -->
+  <div class="bg-white border border-black/12 p-4 flex flex-wrap items-center justify-between gap-4">
+    <div class="flex flex-wrap items-center gap-2">
+      <span class="text-[10px] uppercase tracking-[0.14em] text-[#5e5d59] mr-2">Pilih Profil Crew:</span>
+      {
+        snap.freelancers.map((fr) => (
+          <a
+            href={`/crew?crew=${fr.id}`}
+            class:list={[
+              'px-3.5 py-2 text-xs border transition',
+              fr.id === activeCrew.id
+                ? 'bg-[#121212] text-white border-[#121212] font-semibold'
+                : 'bg-[#f6f4ef] text-[#121212] border-black/15 hover:border-[#121212]',
+            ]}
+          >
+            {fr.name} ({fr.primaryRole})
+          </a>
+        ))
+      }
+    </div>
+    <span class="text-xs text-[#5e5d59]">
+      Rekening Pencairan: <strong class="text-[#121212]">{activeCrew.bankName} {activeCrew.bankAccountNo}</strong>
+    </span>
+  </div>
+
+  <!-- Fee & Payout Summary Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+    <div class="bg-white border border-black/12 p-6 space-y-1">
+      <p class="eyebrow-label text-[#5e5d59]">Fee Ditahan (Menunggu Verifikasi RAW)</p>
+      <p class="text-2xl font-normal tabular-nums">{formatRupiah(lockedTotal)}</p>
+      <p class="text-[11px] text-[#5e5d59]">Otomatis terbuka setelah file mentah aman di NAS Studio</p>
+    </div>
+    <div class="bg-white border border-black/12 p-6 space-y-1">
+      <p class="eyebrow-label text-amber-800">Siap Dicairkan Finance</p>
+      <p class="text-2xl font-normal tabular-nums text-amber-900">{formatRupiah(readyTotal)}</p>
+      <p class="text-[11px] text-[#5e5d59]">RAW sudah diverifikasi — menunggu batch transfer Admin</p>
+    </div>
+    <div class="bg-white border border-black/12 p-6 space-y-1">
+      <p class="eyebrow-label text-emerald-800">Fee Sudah Diterima</p>
+      <p class="text-2xl font-normal tabular-nums text-emerald-900">{formatRupiah(paidTotal)}</p>
+      <p class="text-[11px] text-[#5e5d59]">Rating Performa Internal: ★ {activeCrew.rating}</p>
+    </div>
+  </div>
+
+  <!-- Assignments & Digital Call Sheets -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+    <div class="lg:col-span-8 space-y-5">
+      <h2 class="text-lg font-medium">Daftar Penugasan Lapangan & Digital Call Sheet</h2>
+
+      {
+        assignments.map((ca) => {
+          const bk = snap.bookings.find((b) => b.id === ca.bookingId);
+          if (!bk) return null;
+          const ws = JSON.parse(bk.worksheetJson || '{}');
+          return (
+            <div class="bg-white border border-black/15 p-6 space-y-5">
+              <div class="flex flex-wrap items-start justify-between gap-4 border-b border-black/10 pb-4">
+                <div class="space-y-1">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="font-mono text-xs font-semibold bg-[#f3f2ee] px-2 py-0.5">{bk.bookingCode}</span>
+                    <span class="text-xs font-semibold uppercase tracking-wider text-[#5e5d59]">{ca.roleTitle}</span>
+                    {!bk.allowPortfolioPublish && (
+                      <span class="bg-red-800 text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5">
+                        🔒 DILARANG UPLOAD STORY / SOSMED (PRIVATE CLIENT)
+                      </span>
+                    )}
+                  </div>
+                  <h3 class="text-xl font-normal">{bk.eventTitle}</h3>
+                  <p class="text-xs text-[#5e5d59]">
+                    {formatShortDate(bk.eventDate)} ({bk.startTime}–{bk.endTime} WIB) • {bk.venueName}, {bk.venueCity}
+                  </p>
+                </div>
+
+                <div class="text-right">
+                  <p class="text-base font-semibold tabular-nums">
+                    {formatRupiah(ca.feeAmount + ca.transportAllowance)}
+                  </p>
+                  <p class="text-[11px] text-[#5e5d59]">
+                    Status Fee: <strong class="text-[#121212]">{ca.payoutStatus}</strong>
+                  </p>
+                </div>
+              </div>
+
+              {/* Call Sheet Brief */}
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-[#f6f4ef] p-4 text-xs border border-black/8">
+                <div>
+                  <span class="text-[#5e5d59] block text-[10px] uppercase">Jam Standby & Dresscode</span>
+                  <strong>{ca.callTime}</strong> • {ca.dresscode}
+                </div>
+                <div>
+                  <span class="text-[#5e5d59] block text-[10px] uppercase">PIC / WO Lapangan</span>
+                  <strong>{ws.woContact || bk.clientPhone}</strong>
+                </div>
+                <div>
+                  <span class="text-[#5e5d59] block text-[10px] uppercase">Navigasi Venue</span>
+                  {bk.venueMapsUrl ? (
+                    <a href={bk.venueMapsUrl} target="_blank" class="underline font-semibold">
+                      Buka Google Maps ↗
+                    </a>
+                  ) : (
+                    <span>{bk.venueName}</span>
+                  )}
+                </div>
+              </div>
+
+              {ws.specialNotes && (
+                <p class="text-xs text-[#3b3a37] bg-amber-50/70 border border-amber-200 p-3">
+                  <strong>Catatan Brief Klien:</strong> {ws.specialNotes}
+                </p>
+              )}
+
+              {/* Action Controls: Offer Accept/Decline -> Checkin -> Submit RAW */}
+              {ca.offerStatus === 'OFFERED' ? (
+                <div class="flex flex-wrap items-center justify-between gap-4 pt-2 border-t border-black/10">
+                  <span class="text-xs font-medium text-amber-900">
+                    Tawaran Job Baru — Konfirmasi kesediaan Anda:
+                  </span>
+                  <div class="flex gap-2">
+                    <form method="POST" action="/api/actions">
+                      <input type="hidden" name="action" value="crew_respond_offer" />
+                      <input type="hidden" name="assignmentId" value={ca.id} />
+                      <input type="hidden" name="offerStatus" value="ACCEPTED" />
+                      <input type="hidden" name="redirectTo" value={`/crew?crew=${activeCrew.id}`} />
+                      <button type="submit" class="btn-sq-black !py-2 !px-4 !text-[10px] cursor-pointer">
+                        ✓ Terima Tugas
+                      </button>
+                    </form>
+                    <form method="POST" action="/api/actions">
+                      <input type="hidden" name="action" value="crew_respond_offer" />
+                      <input type="hidden" name="assignmentId" value={ca.id} />
+                      <input type="hidden" name="offerStatus" value="DECLINED" />
+                      <input type="hidden" name="redirectTo" value={`/crew?crew=${activeCrew.id}`} />
+                      <button type="submit" class="btn-sq-outline-dark !py-2 !px-4 !text-[10px] cursor-pointer">
+                        Tolak
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              ) : (
+                <div class="space-y-4 pt-2 border-t border-black/10">
+                  <div class="flex flex-wrap items-center justify-between gap-3 text-xs">
+                    <div>
+                      Kehadiran Hari-H:{' '}
+                      {ca.checkinAt ? (
+                        <strong class="text-emerald-800">✓ Check-In tercatat ({ca.checkinAt})</strong>
+                      ) : (
+                        <span class="text-[#5e5d59]">Belum Check-In</span>
+                      )}
+                    </div>
+                    {!ca.checkinAt && (
+                      <form method="POST" action="/api/actions">
+                        <input type="hidden" name="action" value="crew_checkin" />
+                        <input type="hidden" name="assignmentId" value={ca.id} />
+                        <input type="hidden" name="redirectTo" value={`/crew?crew=${activeCrew.id}`} />
+                        <button type="submit" class="btn-sq-outline-dark !py-2 !px-4 !text-[10px] cursor-pointer">
+                          📍 Check-In Tiba di Lokasi
+                        </button>
+                      </form>
+                    )}
+                  </div>
+
+                  {/* RAW File Handover Form */}
+                  {ca.rawStatus === 'VERIFIED' ? (
+                    <div class="bg-emerald-50 border border-emerald-200 p-3 text-xs text-emerald-950">
+                      <strong>✓ File RAW Terverifikasi Studio:</strong> {ca.rawStorageNote}
+                    </div>
+                  ) : (
+                    <form method="POST" action="/api/actions" class="bg-[#fbfaf7] p-4 border border-black/12 space-y-2.5 text-xs">
+                      <input type="hidden" name="action" value="crew_submit_raw" />
+                      <input type="hidden" name="assignmentId" value={ca.id} />
+                      <input type="hidden" name="redirectTo" value={`/crew?crew=${activeCrew.id}`} />
+                      <p class="font-semibold uppercase tracking-wider text-[10px] text-[#5e5d59]">
+                        Laporan Serah Terima Kartu Memori / File Mentah (Syarat Pencairan Fee)
+                      </p>
+                      <input
+                        type="text"
+                        name="rawStorageNote"
+                        value={ca.rawStorageNote}
+                        required
+                        placeholder="Contoh: Diunggah ke NAS Vol-02 / Serah terima SSD #03 (1.420 Foto - 64 GB)"
+                        class="w-full px-3 py-2 bg-white border border-black/20"
+                      />
+                      <input
+                        type="text"
+                        name="fieldNotes"
+                        value={ca.fieldNotes}
+                        placeholder="Catatan lapangan / overtime jam jika ada..."
+                        class="w-full px-3 py-2 bg-white border border-black/20"
+                      />
+                      <button type="submit" class="btn-sq-black !py-2 !px-4 !text-[10px] cursor-pointer">
+                        {ca.rawStatus === 'SUBMITTED' ? 'Update Laporan Serah Terima RAW' : 'Kirim Bukti Serah Terima RAW →'}
+                      </button>
+                    </form>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })
+      }
+    </div>
+
+    <!-- Availability / Blocked Date Manager -->
+    <div class="lg:col-span-4 bg-white border border-black/15 p-6 space-y-5">
+      <div class="border-b border-black/10 pb-3">
+        <p class="eyebrow-label text-[#5e5d59]">Availability Sync</p>
+        <h2 class="text-lg font-medium mt-1">Tanggal Tidak Tersedia (Blocked)</h2>
+        <p class="text-xs text-[#5e5d59] mt-1">
+          Tandai tanggal di mana Anda berhalangan agar Admin tidak menugaskan jadwal bentrok.
+        </p>
+      </div>
+
+      <form method="POST" action="/api/actions" class="flex gap-2">
+        <input type="hidden" name="action" value="crew_add_blocked_date" />
+        <input type="hidden" name="freelancerId" value={activeCrew.id} />
+        <input type="hidden" name="redirectTo" value={`/crew?crew=${activeCrew.id}`} />
+        <input type="date" name="blockedDate" required class="flex-1 px-3 py-2 border border-black/20 text-xs" />
+        <button type="submit" class="btn-sq-black !py-2 !px-4 !text-[10px] cursor-pointer">Toggle</button>
+      </form>
+
+      <div class="space-y-2 text-xs">
+        {
+          blockedDates.length === 0 ? (
+            <p class="text-[#5e5d59]">Seluruh tanggal terbuka untuk penugasan Ruang Visual.</p>
+          ) : (
+            blockedDates.map((d) => (
+              <div class="flex items-center justify-between p-2.5 bg-[#f6f4ef] border border-black/10">
+                <span class="font-mono font-medium">{formatShortDate(d)}</span>
+                <form method="POST" action="/api/actions">
+                  <input type="hidden" name="action" value="crew_add_blocked_date" />
+                  <input type="hidden" name="freelancerId" value={activeCrew.id} />
+                  <input type="hidden" name="blockedDate" value={d} />
+                  <input type="hidden" name="redirectTo" value={`/crew?crew=${activeCrew.id}`} />
+                  <button type="submit" class="text-[10px] underline text-red-800 cursor-pointer">
+                    Buka Kembali
+                  </button>
+                </form>
+              </div>
+            ))
+          )
+        }
+      </div>
+    </div>
+  </div>
+</BackofficeLayout>

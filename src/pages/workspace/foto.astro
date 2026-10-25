@@ -1,0 +1,189 @@
+---
+import BackofficeLayout from '../../layouts/BackofficeLayout.astro';
+import { getFullStudioSnapshot } from '../../lib/analytics';
+import { formatRupiah, formatShortDate, PHOTO_TASK_LABELS } from '../../lib/format';
+
+const snap = await getFullStudioSnapshot();
+const photoEditor = snap.users.find((u) => u.role === 'PHOTO_EDITOR');
+
+const activeQueue = snap.photoTasks.filter((t) => t.status !== 'FINALIZED' && !t.slaPaused);
+const pausedQueue = snap.photoTasks.filter((t) => t.slaPaused);
+const finalizedQueue = snap.photoTasks.filter((t) => t.status === 'FINALIZED');
+const unpaidIncentive = finalizedQueue
+  .filter((t) => !t.incentivePaid)
+  .reduce((s, t) => s + t.incentiveFee, 0);
+---
+
+<BackofficeLayout
+  title={`Workspace Editor Foto — ${photoEditor?.name || 'Dimas Saputra'}`}
+  subtitle="1 Orang Dedicated In-House Photo & Album Layout Editor • Lightroom Sync & SLA Auto-Pause"
+  activeNav="photo-editor"
+>
+  <!-- Capacity & Compensation Strip -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+    <div class="bg-white border border-black/12 p-5">
+      <p class="eyebrow-label text-[#5e5d59]">Antrean Aktif Dikerjakan</p>
+      <p class="text-3xl font-normal mt-1">{activeQueue.length} Project</p>
+      <p class="text-[11px] text-[#5e5d59] mt-1">Kapasitas ideal maks. 5 project aktif bersamaan</p>
+    </div>
+    <div class="bg-white border border-black/12 p-5">
+      <p class="eyebrow-label text-amber-800">SLA Auto-Paused (Bola di Klien)</p>
+      <p class="text-3xl font-normal mt-1 text-amber-900">{pausedQueue.length} Project</p>
+      <p class="text-[11px] text-[#5e5d59] mt-1">Menunggu pilih foto / review layout</p>
+    </div>
+    <div class="bg-white border border-black/12 p-5">
+      <p class="eyebrow-label text-emerald-800">Selesai (Finalized)</p>
+      <p class="text-3xl font-normal mt-1 text-emerald-900">{finalizedQueue.length} Project</p>
+      <p class="text-[11px] text-[#5e5d59] mt-1">Siap naik cetak / terkirim</p>
+    </div>
+    <div class="bg-[#181817] text-white p-5">
+      <p class="eyebrow-label text-white/55">Gaji Pokok + Insentif Belum Cair</p>
+      <p class="text-2xl font-normal tabular-nums mt-1">
+        {formatRupiah((photoEditor?.baseMonthlySalary || 4500000) + unpaidIncentive)}
+      </p>
+      <p class="text-[11px] text-white/60 mt-1">
+        Gaji {formatRupiah(photoEditor?.baseMonthlySalary || 4500000)} + Komisi {formatRupiah(unpaidIncentive)}
+      </p>
+    </div>
+  </div>
+
+  <!-- Photo Production Queue Cards -->
+  <div class="space-y-5">
+    <h2 class="text-lg font-medium">Antrean Tugas Editing Foto, Retouching & Layout Album</h2>
+
+    {
+      snap.photoTasks.map((task) => {
+        const bk = snap.bookings.find((b) => b.id === task.bookingId);
+        if (!bk) return null;
+        const gal = snap.galleries.find((g) => g.bookingId === bk.id);
+        const photos = gal ? snap.galleryPhotos.filter((p) => p.galleryId === gal.id) : [];
+        const pickedEdit = photos.filter((p) => p.selectedForEdit);
+        const lightroomString = pickedEdit.map((p) => p.filename).join(', ');
+        const photoNotes = photos.filter((p) => p.clientNote);
+
+        return (
+          <div class="bg-white border border-black/15 p-6 space-y-5">
+            <div class="flex flex-wrap items-start justify-between gap-4 border-b border-black/10 pb-4">
+              <div class="space-y-1">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="font-mono text-xs font-semibold bg-[#f3f2ee] px-2.5 py-0.5">{bk.bookingCode}</span>
+                  <span
+                    class:list={[
+                      'text-[10px] font-bold uppercase tracking-wider px-2 py-0.5',
+                      task.priority === 'EXPRESS'
+                        ? 'bg-red-800 text-white'
+                        : task.priority === 'HIGH'
+                          ? 'bg-amber-200 text-amber-950'
+                          : 'bg-[#e5e4df] text-[#121212]',
+                    ]}
+                  >
+                    {task.priority}
+                  </span>
+                  {task.slaPaused && (
+                    <span class="bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-semibold uppercase px-2 py-0.5">
+                      ⏸ SLA PAUSED
+                    </span>
+                  )}
+                  {!bk.allowPortfolioPublish && (
+                    <span class="bg-red-900 text-white text-[10px] font-semibold uppercase px-2.5 py-0.5">
+                      🔒 PRIVATE — DO NOT EXPORT FOR PORTFOLIO
+                    </span>
+                  )}
+                </div>
+                <h3 class="text-xl font-normal">{bk.eventTitle}</h3>
+                <p class="text-xs text-[#5e5d59]">
+                  Klien: {bk.clientName} • Tenggat SLA: <strong>{formatShortDate(task.slaDueDate)}</strong> • Insentif
+                  Project: <strong>{formatRupiah(task.incentiveFee)}</strong>
+                </p>
+              </div>
+
+              <span class="px-3 py-1.5 bg-[#181817] text-white text-[10px] uppercase tracking-[0.14em] font-semibold">
+                {PHOTO_TASK_LABELS[task.status] || task.status}
+              </span>
+            </div>
+
+            {/* One-Click Lightroom Filter Copy Box */}
+            {gal && (
+              <div class="bg-[#f6f4ef] border border-black/10 p-4 space-y-3 text-xs">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <span class="font-semibold uppercase tracking-wider text-[10px] text-[#5e5d59]">
+                    Lightroom Selection Filter ({pickedEdit.length}/{gal.editQuota} Foto Dipilih • Status Layout:{' '}
+                    {gal.albumLayoutStatus})
+                  </span>
+                  {lightroomString && (
+                    <button
+                      type="button"
+                      data-copy={lightroomString}
+                      onclick="navigator.clipboard.writeText(this.dataset.copy); this.textContent='✓ Tersalin ke Clipboard!';"
+                      class="btn-sq-black !py-1.5 !px-3 !text-[10px] cursor-pointer"
+                    >
+                      Copy Kode File ke Lightroom
+                    </button>
+                  )}
+                </div>
+                <p class="font-mono text-[11px] bg-white p-2.5 border border-black/10 select-all">
+                  {lightroomString || 'Belum ada foto yang dipilih di galeri ini.'}
+                </p>
+
+                {photoNotes.length > 0 && (
+                  <div class="space-y-1 pt-1">
+                    <p class="font-semibold text-[11px]">Catatan Retouch Spesifik per Foto dari Klien:</p>
+                    {photoNotes.map((pn) => (
+                      <p class="text-[11px] text-[#3c3b38]">
+                        • <strong class="font-mono">{pn.filename}:</strong> {pn.clientNote}
+                      </p>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Update Photo Task Form */}
+            <form method="POST" action="/api/actions" class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end pt-2">
+              <input type="hidden" name="action" value="update_photo_task" />
+              <input type="hidden" name="taskId" value={task.id} />
+              <input type="hidden" name="redirectTo" value="/workspace/foto" />
+
+              <div class="md:col-span-4">
+                <label class="block text-[10px] uppercase tracking-wider text-[#5e5d59] mb-1">Update Tahap Foto</label>
+                <select name="status" class="w-full px-3 py-2.5 border border-black/20 bg-white text-xs">
+                  {Object.entries(PHOTO_TASK_LABELS).map(([k, lbl]) => (
+                    <option value={k} selected={task.status === k}>
+                      {lbl}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div class="md:col-span-4">
+                <label class="block text-[10px] uppercase tracking-wider text-[#5e5d59] mb-1">
+                  Tautan Mockup Layout Album (Opsional)
+                </label>
+                <input
+                  type="text"
+                  name="albumLayoutUrl"
+                  value={gal?.albumLayoutUrl || ''}
+                  placeholder="https://... draft spread album"
+                  class="w-full px-3 py-2.5 border border-black/20 bg-white text-xs"
+                />
+              </div>
+
+              <div class="md:col-span-4 flex gap-2">
+                <input
+                  type="text"
+                  name="revisionNotes"
+                  value={task.revisionNotes}
+                  placeholder="Catatan progres editor..."
+                  class="flex-1 px-3 py-2.5 border border-black/20 bg-white text-xs"
+                />
+                <button type="submit" class="btn-sq-black !py-2.5 !px-4 !text-[10px] shrink-0 cursor-pointer">
+                  Simpan
+                </button>
+              </div>
+            </form>
+          </div>
+        );
+      })
+    }
+  </div>
+</BackofficeLayout>

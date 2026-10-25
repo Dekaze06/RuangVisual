@@ -1,0 +1,485 @@
+---
+import BackofficeLayout from '../../layouts/BackofficeLayout.astro';
+import { getFullStudioSnapshot } from '../../lib/analytics';
+import { formatRupiah, formatShortDate } from '../../lib/format';
+
+const snap = await getFullStudioSnapshot();
+const fin = snap.financeSummary;
+
+const photoEditor = snap.users.find((u) => u.role === 'PHOTO_EDITOR');
+const videoEditor = snap.users.find((u) => u.role === 'VIDEO_EDITOR');
+
+const unpaidPhotoComm = snap.photoTasks
+  .filter((t) => t.status === 'FINALIZED' && !t.incentivePaid)
+  .reduce((s, t) => s + t.incentiveFee, 0);
+const unpaidVideoComm = snap.videoTasks
+  .filter((t) => t.mainStatus === 'FINALIZED' && !t.incentivePaid)
+  .reduce((s, t) => s + t.incentiveFee, 0);
+
+const pendingClientInvoices = snap.invoices.filter((i) => i.status !== 'PAID');
+const unpaidCrewJobs = snap.crewAssignments.filter((c) => c.payoutStatus !== 'PAID' && c.offerStatus !== 'DECLINED');
+const unpaidLabOrders = snap.printOrders.filter((p) => !p.vendorPaid);
+
+// Category Profitability Summary
+const categoryStats = snap.categories.map((cat) => {
+  const items = snap.jobCostings.filter((jc) => jc.booking.categorySlug === cat.slug);
+  const omzet = items.reduce((s, i) => s + i.booking.grandTotal, 0);
+  const profit = items.reduce((s, i) => s + i.grossProfit, 0);
+  return {
+    name: cat.name,
+    count: items.length,
+    omzet,
+    profit,
+    margin: omzet > 0 ? Math.round((profit / omzet) * 100) : 0,
+  };
+});
+---
+
+<BackofficeLayout
+  title="Sistem Keuangan Lengkap, Payroll & Akuntansi Project"
+  subtitle="Manajemen Multi-Rekening, Unearned Revenue (DP Mengendap), Payroll Crew & 2 Editor, HPP Percetakan, serta Job Costing."
+  activeNav="finance"
+>
+  <!-- Section 1: Corporate Cash & Accrual Metrics -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+    <div class="bg-[#181817] text-white p-6 space-y-1">
+      <p class="eyebrow-label text-white/50">Total Kas & Bank Aktif</p>
+      <p class="text-2xl md:text-3xl font-normal tabular-nums">{formatRupiah(fin.totalCashBalance)}</p>
+      <p class="text-[11px] text-white/60">Kas Masuk Klien: {formatRupiah(fin.totalCashCollected)}</p>
+    </div>
+
+    <div class="bg-white border border-black/12 p-6 space-y-1">
+      <p class="eyebrow-label text-amber-800">Unearned Revenue (DP Mengendap)</p>
+      <p class="text-2xl md:text-3xl font-normal tabular-nums text-amber-900">{formatRupiah(fin.unearnedRevenue)}</p>
+      <p class="text-[11px] text-[#5e5d59]">Dana titipan acara yang belum terlaksana</p>
+    </div>
+
+    <div class="bg-white border border-black/12 p-6 space-y-1">
+      <p class="eyebrow-label text-[#5e5d59]">Piutang Pelunasan Klien (AR)</p>
+      <p class="text-2xl md:text-3xl font-normal tabular-nums">{formatRupiah(fin.totalReceivables)}</p>
+      <p class="text-[11px] text-[#5e5d59]">Pendapatan Terealisasi: {formatRupiah(fin.earnedRevenue)}</p>
+    </div>
+
+    <div class="bg-white border border-black/12 p-6 space-y-1">
+      <p class="eyebrow-label text-emerald-800">Laba Bersih Operasional</p>
+      <p class="text-2xl md:text-3xl font-normal tabular-nums text-emerald-900">
+        {formatRupiah(fin.netOperatingProfit)}
+      </p>
+      <p class="text-[11px] text-[#5e5d59]">Setelah dipotong OPEX Studio {formatRupiah(fin.opexTotal)}</p>
+    </div>
+  </div>
+
+  <!-- Section 2: Multi-Account Cash Positions + Inter-Account Transfer -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+    <div class="lg:col-span-7 bg-white border border-black/15 p-6 space-y-4">
+      <div class="flex items-center justify-between border-b border-black/10 pb-3">
+        <h2 class="text-lg font-medium">Posisi Saldo Multi-Rekening & Kas Studio</h2>
+        <span class="text-xs text-[#5e5d59]">Real-Time Ledger Sync</span>
+      </div>
+
+      <div class="divide-y divide-black/10 text-xs">
+        {
+          snap.accounts.map((acc) => (
+            <div class="py-3.5 flex items-center justify-between gap-4">
+              <div>
+                <p class="font-semibold text-sm">
+                  <span class="font-mono text-xs text-[#5e5d59] mr-1.5">[{acc.code}]</span>
+                  {acc.name}
+                </p>
+                <p class="text-[#5e5d59]">{acc.accountNumber}</p>
+              </div>
+              <div class="text-right">
+                <p class="text-base font-semibold tabular-nums">{formatRupiah(acc.balance)}</p>
+                <span class="text-[10px] uppercase tracking-wider text-[#5e5d59]">{acc.accountType}</span>
+              </div>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+
+    <!-- Inter-Account Transfer (Mutasi Pindah Buku) -->
+    <div class="lg:col-span-5 bg-white border border-black/15 p-6 space-y-4">
+      <div class="border-b border-black/10 pb-3">
+        <p class="eyebrow-label text-[#5e5d59]">Treasury Management</p>
+        <h2 class="text-lg font-medium mt-0.5">Mutasi Pindah Buku Antar Rekening</h2>
+        <p class="text-xs text-[#5e5d59]">
+          Contoh: Tarik settlement Midtrans ke BCA Operasional atau sisihkan 10% ke Dana Cadangan Peremajaan Alat.
+        </p>
+      </div>
+
+      <form method="POST" action="/api/actions" class="space-y-3 text-xs">
+        <input type="hidden" name="action" value="transfer_between_accounts" />
+        <input type="hidden" name="redirectTo" value="/admin/keuangan" />
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold mb-1">Dari Rekening</label>
+            <select name="fromAccountId" class="w-full px-3 py-2.5 border border-black/20 bg-white">
+              {snap.accounts.map((a) => <option value={a.id}>{a.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Ke Rekening</label>
+            <select name="toAccountId" class="w-full px-3 py-2.5 border border-black/20 bg-white">
+              {
+                snap.accounts.map((a, idx) => (
+                  <option value={a.id} selected={idx === 4}>
+                    {a.name}
+                  </option>
+                ))
+              }
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold mb-1">Nominal Mutasi (IDR)</label>
+            <input type="number" name="amount" value="2000000" required class="w-full px-3 py-2.5 border border-black/20" />
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Keterangan</label>
+            <input
+              type="text"
+              name="notes"
+              placeholder="Alokasi Dana Alat / Tarik PG"
+              class="w-full px-3 py-2.5 border border-black/20"
+            />
+          </div>
+        </div>
+
+        <button type="submit" class="btn-sq-black w-full !py-2.5 cursor-pointer">Proses Pindah Buku →</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Section 3: Payroll Crew Freelance, Gaji/Komisi 2 Editor & Hutang Vendor Cetak -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+    <!-- Column A: Freelance Crew Payout -->
+    <div class="bg-white border border-black/15 p-6 space-y-4">
+      <div class="border-b border-black/10 pb-3">
+        <p class="eyebrow-label text-[#5e5d59]">Accounts Payable • Crew</p>
+        <h3 class="text-base font-semibold mt-0.5">Pencairan Fee Crew Freelance</h3>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        {
+          unpaidCrewJobs.length === 0 ? (
+            <p class="text-[#5e5d59]">Seluruh fee kru lapangan telah lunas dibayarkan.</p>
+          ) : (
+            unpaidCrewJobs.map((ca) => {
+              const fr = snap.freelancers.find((f) => f.id === ca.freelancerId);
+              const bk = snap.bookings.find((b) => b.id === ca.bookingId);
+              const total = ca.feeAmount + ca.transportAllowance;
+              return (
+                <div class="p-3.5 bg-[#fbfaf7] border border-black/10 space-y-2">
+                  <div class="flex justify-between font-semibold">
+                    <span>{fr?.name}</span>
+                    <span class="tabular-nums">{formatRupiah(total)}</span>
+                  </div>
+                  <p class="text-[11px] text-[#5e5d59]">
+                    {bk?.bookingCode} • {ca.roleTitle} • {fr?.bankName} {fr?.bankAccountNo}
+                  </p>
+                  {ca.payoutStatus === 'READY_TO_PAY' ? (
+                    <form method="POST" action="/api/actions" class="flex gap-2">
+                      <input type="hidden" name="action" value="pay_crew_assignment" />
+                      <input type="hidden" name="assignmentId" value={ca.id} />
+                      <input type="hidden" name="accountId" value="acc-bca" />
+                      <input type="hidden" name="redirectTo" value="/admin/keuangan" />
+                      <button type="submit" class="btn-sq-black w-full !py-2 !text-[10px] cursor-pointer">
+                        ✓ Cairkan Fee via BCA
+                      </button>
+                    </form>
+                  ) : (
+                    <div class="px-2.5 py-1.5 bg-amber-50 border border-amber-200 text-[10px] text-amber-900 font-medium">
+                      🔒 Terkunci — Menunggu Verifikasi RAW di Menu Booking
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )
+        }
+      </div>
+    </div>
+
+    <!-- Column B: Dedicated 1 Photo Editor & 1 Video Editor Payroll -->
+    <div class="bg-white border border-black/15 p-6 space-y-4">
+      <div class="border-b border-black/10 pb-3">
+        <p class="eyebrow-label text-[#5e5d59]">In-House Post-Production Payroll</p>
+        <h3 class="text-base font-semibold mt-0.5">Gaji & Insentif 2 Editor</h3>
+      </div>
+
+      <div class="space-y-4 text-xs">
+        {/* Photo Editor */}
+        <form method="POST" action="/api/actions" class="p-4 bg-[#fbfaf7] border border-black/10 space-y-2.5">
+          <input type="hidden" name="action" value="pay_editor_payroll" />
+          <input type="hidden" name="editorRole" value="PHOTO_EDITOR" />
+          <input type="hidden" name="accountId" value="acc-bca" />
+          <input type="hidden" name="redirectTo" value="/admin/keuangan" />
+          <div class="flex justify-between font-semibold">
+            <span>{photoEditor?.name} (Editor Foto)</span>
+            <span>{formatRupiah(photoEditor?.baseMonthlySalary || 4500000)}/bln</span>
+          </div>
+          <p class="text-[11px] text-[#5e5d59]">
+            Komisi Project Selesai Belum Cair: <strong class="text-[#121212]">{formatRupiah(unpaidPhotoComm)}</strong>
+          </p>
+          <label class="flex items-center gap-2 text-[11px]">
+            <input type="checkbox" name="includeBaseSalary" value="true" checked class="accent-[#121212]" />
+            <span>Sertakan Gaji Pokok Bulanan</span>
+          </label>
+          <button type="submit" class="btn-sq-black w-full !py-2 !text-[10px] cursor-pointer">
+            Bayar Payroll Editor Foto
+          </button>
+        </form>
+
+        {/* Video Editor */}
+        <form method="POST" action="/api/actions" class="p-4 bg-[#fbfaf7] border border-black/10 space-y-2.5">
+          <input type="hidden" name="action" value="pay_editor_payroll" />
+          <input type="hidden" name="editorRole" value="VIDEO_EDITOR" />
+          <input type="hidden" name="accountId" value="acc-bca" />
+          <input type="hidden" name="redirectTo" value="/admin/keuangan" />
+          <div class="flex justify-between font-semibold">
+            <span>{videoEditor?.name} (Editor Video)</span>
+            <span>{formatRupiah(videoEditor?.baseMonthlySalary || 5000000)}/bln</span>
+          </div>
+          <p class="text-[11px] text-[#5e5d59]">
+            Komisi Project Selesai Belum Cair: <strong class="text-[#121212]">{formatRupiah(unpaidVideoComm)}</strong>
+          </p>
+          <label class="flex items-center gap-2 text-[11px]">
+            <input type="checkbox" name="includeBaseSalary" value="true" checked class="accent-[#121212]" />
+            <span>Sertakan Gaji Pokok Bulanan</span>
+          </label>
+          <button type="submit" class="btn-sq-black w-full !py-2 !text-[10px] cursor-pointer">
+            Bayar Payroll Editor Video
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Column C: Print Vendor Payables & Client Receivables -->
+    <div class="bg-white border border-black/15 p-6 space-y-4">
+      <div class="border-b border-black/10 pb-3">
+        <p class="eyebrow-label text-[#5e5d59]">Print Lab Payables & AR</p>
+        <h3 class="text-base font-semibold mt-0.5">Tagihan Lab Percetakan & Piutang</h3>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        {
+          unpaidLabOrders.map((po) => {
+            const v = snap.printVendors.find((pv) => pv.id === po.vendorId);
+            return (
+              <div class="p-3.5 bg-[#fbfaf7] border border-black/10 space-y-2">
+                <div class="flex justify-between font-semibold">
+                  <span>{v?.name}</span>
+                  <span class="tabular-nums">{formatRupiah(po.hppCost + po.shippingCost)}</span>
+                </div>
+                <p class="text-[11px] text-[#5e5d59]">{po.itemName}</p>
+                <form method="POST" action="/api/actions">
+                  <input type="hidden" name="action" value="pay_print_vendor" />
+                  <input type="hidden" name="printOrderId" value={po.id} />
+                  <input type="hidden" name="accountId" value="acc-bca" />
+                  <input type="hidden" name="redirectTo" value="/admin/keuangan" />
+                  <button type="submit" class="btn-sq-outline-dark w-full !py-1.5 !text-[10px] cursor-pointer">
+                    Lunasi Nota Lab Cetak
+                  </button>
+                </form>
+              </div>
+            );
+          })
+        }
+
+        <div class="pt-2 border-t border-black/10 space-y-2">
+          <p class="text-[10px] uppercase tracking-wider font-semibold text-[#5e5d59]">
+            Daftar Invoice Klien Belum Lunas ({pendingClientInvoices.length})
+          </p>
+          {
+            pendingClientInvoices.map((inv) => (
+              <div class="flex items-center justify-between text-[11px] py-1">
+                <span>
+                  <strong class="font-mono">{inv.invoiceNumber}</strong> ({inv.status})
+                </span>
+                <a href={`/booking/pembayaran/${inv.id}`} class="underline font-semibold tabular-nums">
+                  {formatRupiah(inv.amount)} ↗
+                </a>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 4: Per-Project Profitability / Job Costing Table -->
+  <div class="bg-white border border-black/15 p-6 space-y-5 overflow-x-auto">
+    <div class="flex flex-wrap items-center justify-between gap-4 border-b border-black/10 pb-4">
+      <div>
+        <p class="eyebrow-label text-[#5e5d59]">Unit Economics & Margin Control</p>
+        <h2 class="text-xl font-normal mt-0.5">Analisis Laba Kotor & HPP per Project (Job Costing)</h2>
+      </div>
+      <div class="flex flex-wrap gap-3 text-xs">
+        {
+          categoryStats.map((cs) => (
+            <div class="px-3 py-1.5 bg-[#f6f4ef] border border-black/10">
+              <strong>{cs.name}:</strong> Margin Rata-rata {cs.margin}%
+            </div>
+          ))
+        }
+      </div>
+    </div>
+
+    <table class="w-full text-left text-xs border-collapse">
+      <thead>
+        <tr class="border-b border-black/15 text-[10px] uppercase tracking-wider text-[#5e5d59]">
+          <th class="py-3 pr-3">Kode Booking</th>
+          <th class="py-3 pr-3">Klien & Paket</th>
+          <th class="py-3 pr-3 text-right">Nilai Kontrak</th>
+          <th class="py-3 pr-3 text-right">Fee Crew</th>
+          <th class="py-3 pr-3 text-right">Insentif 2 Editor</th>
+          <th class="py-3 pr-3 text-right">HPP Cetak</th>
+          <th class="py-3 pr-3 text-right">MDR PG</th>
+          <th class="py-3 pr-3 text-right">Laba Kotor</th>
+          <th class="py-3 text-right">Margin</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-black/10 tabular-nums">
+        {
+          snap.jobCostings.map((jc) => (
+            <tr>
+              <td class="py-3.5 pr-3 font-mono font-semibold">{jc.booking.bookingCode}</td>
+              <td class="py-3.5 pr-3">
+                <p class="font-semibold">{jc.booking.clientName}</p>
+                <p class="text-[11px] text-[#5e5d59]">{jc.packageName}</p>
+              </td>
+              <td class="py-3.5 pr-3 text-right font-medium">{formatRupiah(jc.booking.grandTotal)}</td>
+              <td class="py-3.5 pr-3 text-right text-red-900">-{formatRupiah(jc.crewCost)}</td>
+              <td class="py-3.5 pr-3 text-right text-red-900">-{formatRupiah(jc.editorCost)}</td>
+              <td class="py-3.5 pr-3 text-right text-red-900">-{formatRupiah(jc.printHpp)}</td>
+              <td class="py-3.5 pr-3 text-right text-[#5e5d59]">-{formatRupiah(jc.gatewayMdr)}</td>
+              <td class="py-3.5 pr-3 text-right font-semibold text-emerald-900">{formatRupiah(jc.grossProfit)}</td>
+              <td class="py-3.5 text-right">
+                <span
+                  class:list={[
+                    'px-2 py-0.5 text-[10px] font-bold',
+                    jc.marginPercent >= 45
+                      ? 'bg-emerald-100 text-emerald-900'
+                      : jc.marginPercent >= 30
+                        ? 'bg-amber-100 text-amber-900'
+                        : 'bg-red-100 text-red-900',
+                  ]}
+                >
+                  {jc.marginPercent}%
+                </span>
+              </td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Section 5: Input Pengeluaran OPEX / CAPEX + Buku Besar (General Ledger) -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+    <div class="lg:col-span-4 bg-white border border-black/15 p-6 space-y-4">
+      <div class="border-b border-black/10 pb-3">
+        <p class="eyebrow-label text-[#5e5d59]">Manual Journal Entry</p>
+        <h2 class="text-lg font-medium mt-0.5">Catat Biaya OPEX / Beli Alat (CAPEX)</h2>
+      </div>
+
+      <form method="POST" action="/api/actions" class="space-y-3 text-xs">
+        <input type="hidden" name="action" value="record_ledger_expense" />
+        <input type="hidden" name="redirectTo" value="/admin/keuangan" />
+
+        <div>
+          <label class="block font-semibold mb-1">Rekening Kas / Bank</label>
+          <select name="accountId" class="w-full px-3 py-2.5 border border-black/20 bg-white">
+            {snap.accounts.map((a) => <option value={a.id}>{a.name}</option>)}
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label class="block font-semibold mb-1">Jenis Arus</label>
+            <select name="direction" class="w-full px-3 py-2.5 border border-black/20 bg-white">
+              <option value="OUT">Pengeluaran (OUT)</option>
+              <option value="IN">Pemasukan Lain (IN)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Kategori Akun</label>
+            <select name="category" class="w-full px-3 py-2.5 border border-black/20 bg-white">
+              <option value="OPEX_STUDIO_RENT">OPEX — Sewa & Listrik Studio</option>
+              <option value="OPEX_SOFTWARE_CLOUD">OPEX — Software Adobe & Cloud</option>
+              <option value="OPEX_MARKETING_ADS">OPEX — Iklan IG / TikTok / Pameran</option>
+              <option value="OPEX_GEAR_MAINTENANCE">OPEX — Servis Kamera & Lensa</option>
+              <option value="CAPEX_GEAR_PURCHASE">CAPEX — Pembelian Gear Baru</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-semibold mb-1">Nominal (IDR) *</label>
+          <input type="number" name="amount" placeholder="750000" required class="w-full px-3 py-2.5 border border-black/20" />
+        </div>
+
+        <div>
+          <label class="block font-semibold mb-1">Deskripsi Transaksi *</label>
+          <input
+            type="text"
+            name="description"
+            required
+            placeholder="Contoh: Cleaning sensor 3 kamera Sony Studio"
+            class="w-full px-3 py-2.5 border border-black/20"
+          />
+        </div>
+
+        <button type="submit" class="btn-sq-black w-full !py-2.5 cursor-pointer">Simpan ke Buku Besar →</button>
+      </form>
+    </div>
+
+    <!-- General Ledger Table -->
+    <div class="lg:col-span-8 bg-white border border-black/15 p-6 space-y-4 overflow-x-auto">
+      <div class="flex items-center justify-between border-b border-black/10 pb-3">
+        <h2 class="text-lg font-medium">Buku Besar Transaksi (General Ledger)</h2>
+        <a href="/api/export-finance.csv" class="btn-sq-outline-dark !py-1.5 !px-3 !text-[10px]">
+          Download Excel / CSV ↗
+        </a>
+      </div>
+
+      <table class="w-full text-left text-xs border-collapse">
+        <thead>
+          <tr class="border-b border-black/15 text-[10px] uppercase tracking-wider text-[#5e5d59]">
+            <th class="py-2.5 pr-3">Tanggal</th>
+            <th class="py-2.5 pr-3">Kategori</th>
+            <th class="py-2.5 pr-3">Deskripsi & Referensi</th>
+            <th class="py-2.5 text-right">Nominal</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-black/8 tabular-nums">
+          {
+            [...snap.ledger].reverse().map((tx) => (
+              <tr>
+                <td class="py-3 pr-3 whitespace-nowrap text-[#5e5d59]">{formatShortDate(tx.txDate)}</td>
+                <td class="py-3 pr-3 font-mono text-[10px]">{tx.category}</td>
+                <td class="py-3 pr-3">
+                  <p class="font-medium">{tx.description}</p>
+                  <p class="text-[10px] text-[#5e5d59] font-mono">{tx.referenceDoc}</p>
+                </td>
+                <td
+                  class:list={[
+                    'py-3 text-right font-semibold whitespace-nowrap',
+                    tx.direction === 'IN' ? 'text-emerald-800' : 'text-red-900',
+                  ]}
+                >
+                  {tx.direction === 'IN' ? '+' : '-'}
+                  {formatRupiah(tx.amount)}
+                </td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</BackofficeLayout>

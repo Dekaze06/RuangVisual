@@ -1,0 +1,90 @@
+---
+import EditorialLayout from '../../layouts/EditorialLayout.astro';
+import { getFullStudioSnapshot } from '../../lib/analytics';
+import { formatRupiah, formatShortDate } from '../../lib/format';
+
+const snap = await getFullStudioSnapshot();
+const queryCode = Astro.url.searchParams.get('kode')?.trim().toUpperCase();
+if (queryCode) {
+  const found = snap.bookings.find((b) => b.bookingCode.toUpperCase() === queryCode);
+  if (found) {
+    return Astro.redirect(`/portal/${found.bookingCode}`);
+  }
+}
+---
+
+<EditorialLayout title="Portal Klien & Lacak Progres — Ruang Visual" headerTheme="light">
+  <section class="bg-[#1e1d1c] text-white py-20">
+    <div class="max-w-[1140px] mx-auto px-5 md:px-10 space-y-8">
+      <div class="space-y-3">
+        <p class="eyebrow-label text-white/55">Client Tracking Portal</p>
+        <h1 class="display-lg text-white">Lacak progres dokumentasi & percetakan</h1>
+        <p class="text-sm text-white/70 max-w-xl">
+          Masukkan kode booking Anda untuk mengisi brief acara, memilih foto di galeri interaktif, menyetujui desain
+          album, memantau resi cetakan, dan melunasi tagihan.
+        </p>
+      </div>
+
+      <form method="GET" action="/portal" class="flex flex-col sm:flex-row max-w-xl bg-white">
+        <input
+          type="text"
+          name="kode"
+          placeholder="Masukkan Kode Booking (Contoh: RV-2610-001)"
+          required
+          class="flex-1 px-4 py-4 text-sm text-[#121212] uppercase focus:outline-none"
+        />
+        <button type="submit" class="btn-sq-black !bg-[#353330] hover:!bg-[#121212] cursor-pointer">
+          Buka Portal →
+        </button>
+      </form>
+    </div>
+  </section>
+
+  <!-- Quick Demo Access to All Active Bookings -->
+  <section class="bg-[#f3f2ee] py-16">
+    <div class="max-w-[1140px] mx-auto px-5 md:px-10 space-y-6">
+      <div class="flex items-center justify-between">
+        <h2 class="text-xl font-normal tracking-[-0.02em]">Akses Cepat Project Aktif (Demo Simulasi)</h2>
+        <span class="text-xs text-[#5e5d59]">{snap.bookings.length} Booking Terdaftar</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        {
+          snap.bookings.map((bk) => (
+            <a
+              href={`/portal/${bk.bookingCode}`}
+              class="bg-white border border-black/12 hover:border-[#121212] p-6 transition flex flex-col justify-between gap-4"
+            >
+              <div class="space-y-2">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="font-mono text-xs font-semibold bg-[#f3f2ee] px-2.5 py-1">{bk.bookingCode}</span>
+                  <div class="flex items-center gap-2">
+                    {!bk.allowPortfolioPublish && (
+                      <span class="bg-red-900 text-white text-[9px] uppercase tracking-wider px-2 py-0.5 font-semibold">
+                        Private
+                      </span>
+                    )}
+                    <span class="text-[10px] uppercase tracking-[0.13em] font-semibold text-[#5e5d59]">
+                      {bk.projectStatus}
+                    </span>
+                  </div>
+                </div>
+                <p class="text-lg font-medium">{bk.eventTitle}</p>
+                <p class="text-xs text-[#5e5d59]">
+                  {bk.clientName} • {formatShortDate(bk.eventDate)}
+                </p>
+              </div>
+
+              <div class="pt-3 border-t border-black/10 flex items-center justify-between text-xs">
+                <span>
+                  Terbayar: <strong>{formatRupiah(bk.paidAmount)}</strong> / {formatRupiah(bk.grandTotal)}
+                </span>
+                <span class="font-semibold uppercase tracking-wider">Buka →</span>
+              </div>
+            </a>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+</EditorialLayout>

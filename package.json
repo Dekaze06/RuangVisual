@@ -1,0 +1,25 @@
+{
+  "name": "ruang-visual",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Ruang Visual — Integrated Photography, Videography & Print Management SaaS Platform",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "node ./dist/server/entry.mjs",
+    "start": "node ./dist/server/entry.mjs"
+  },
+  "dependencies": {
+    "@astrojs/node": "^11.1.9",
+    "@electric-sql/pglite": "^0.5.11",
+    "@tailwindcss/vite": "^4.3.3",
+    "astro": "^7.4.2",
+    "drizzle-orm": "^0.45.4",
+    "pg": "^8.23.1",
+    "tailwindcss": "^4.3.3"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.23.1",
+    "typescript": "^7.0.2"
+  }
+}

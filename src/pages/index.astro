@@ -1,0 +1,819 @@
+---
+import EditorialLayout from '../layouts/EditorialLayout.astro';
+import { getFullStudioSnapshot } from '../lib/analytics';
+import { formatRupiah } from '../lib/format';
+
+const snap = await getFullStudioSnapshot();
+const publicStories = snap.bookings.filter((b) => b.allowPortfolioPublish);
+
+const showcaseCategories = [
+  {
+    key: 'wedding',
+    title: 'Wedding',
+    subtitle: 'Akad, Resepsi & Traditional Heritage',
+    priceFrom: formatRupiah(10500000),
+    deliverable: '2 Fotografer • 2 Videografer • Album Magazine 20 Sheet • Teaser H+2',
+    image: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=85',
+    caption: 'The Wedding of Arya & Nadine — Plataran Hutan Kota',
+  },
+  {
+    key: 'prewedding',
+    title: 'Prewedding',
+    subtitle: 'Outdoor Destination & Editorial Studio',
+    priceFrom: formatRupiah(4200000),
+    deliverable: 'Lead Photographer • Videografer • Mood Stylist • Frame 16RS Resepsi',
+    image: 'https://images.unsplash.com/photo-1529634806980-85c3dd6d34ac?auto=format&fit=crop&w=1200&q=85',
+    caption: 'Reza & Clara — Morning Mist at Bromo Caldera',
+  },
+  {
+    key: 'wisuda',
+    title: 'Wisuda',
+    subtitle: 'Personal, Sahabat & Keluarga Kampus',
+    priceFrom: formatRupiah(1150000),
+    deliverable: 'Fotografer Kampus • Video Reels 60s • Frame Minimalis • GDrive Lengkap',
+    image: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=1200&q=85',
+    caption: 'Nabila Putri, S.T. — Balairung Universitas Indonesia',
+  },
+  {
+    key: 'event',
+    title: 'Lamaran & Adat',
+    subtitle: 'Engagement, Siraman & Pengajian Intim',
+    priceFrom: formatRupiah(4800000),
+    deliverable: '1 Fotografer • 1 Videografer • Album Magnetic • Wooden USB',
+    image: 'https://images.unsplash.com/photo-1515934751635-c81c6bc9a2d8?auto=format&fit=crop&w=1200&q=85',
+    caption: 'Intimate Engagement of Damar & Sekar — Rumah Sarwono',
+  },
+  {
+    key: 'corporate',
+    title: 'Corporate Event',
+    subtitle: 'Summit, Seminar, Konser & Dokumentasi Brand',
+    priceFrom: formatRupiah(8500000),
+    deliverable: '2 Fotografer • Aftermovie 4K • Same-Day Press Photo • Opsi Privasi Penuh',
+    image: 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=1200&q=85',
+    caption: 'Executive Summit & Gala Dinner — Privasi Korporat Terjamin',
+  },
+];
+---
+
+<EditorialLayout headerTheme="dark">
+  <!-- =====================================================================
+       SECTION 1: WARM ESPRESSO EDITORIAL HERO + FLOATING TABLET SHOWCASE
+       ===================================================================== -->
+  <section class="relative overflow-hidden bg-[#1a1410] text-white">
+    <!-- Warm architectural wood & studio light backdrop -->
+    <div
+      class="absolute inset-0 opacity-45 bg-cover bg-center"
+      style="background-image: url('https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=1800&q=80');"
+    >
+    </div>
+    <div class="absolute inset-0 bg-gradient-to-r from-[#17110d] via-[#1c1510]/88 to-[#1a1410]/55"></div>
+
+    <div class="relative max-w-[1380px] mx-auto px-5 md:px-10 py-16 md:py-24 lg:py-28">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+        <!-- Left Hero Copy -->
+        <div class="lg:col-span-6 space-y-7">
+          <p class="eyebrow-label text-white/65">Wedding • Prewedding • Wisuda • Event</p>
+          <h1 class="display-hero text-white">
+            Dirancang <span class="italic font-light text-white/85">untuk</span><br />
+            Cerita Abadi
+          </h1>
+          <p class="text-base md:text-lg text-white/75 max-w-md font-light leading-relaxed">
+            Dari penguncian tanggal instan, kurasi foto di galeri interaktif, hingga pelacakan cetak album fisik ke
+            tangan keluarga Anda.
+          </p>
+          <div class="flex flex-wrap items-center gap-4 pt-2">
+            <a href="/booking" class="btn-sq-white">Mulai Booking</a>
+            <a href="/galeri/arya-nadine" class="btn-sq-outline-light">Demo Galeri Klien</a>
+          </div>
+        </div>
+
+        <!-- Right Tablet Editorial Frame (Squarespace Hero Composition) -->
+        <div class="lg:col-span-6 flex justify-center lg:justify-end">
+          <div class="relative w-full max-w-[440px]">
+            <!-- Subtle studio shadow pedestal -->
+            <div class="bg-[#0e0c0b] p-3.5 md:p-4 shadow-[0_32px_70px_rgba(0,0,0,0.65)] border border-white/15">
+              <div class="bg-[#f4efe6] text-[#1a1410] p-5 md:p-6 space-y-4">
+                <div class="flex items-center justify-between text-[9px] tracking-[0.18em] uppercase text-[#5e5d59] border-b border-black/10 pb-2.5">
+                  <span>Ruang Visual Journal</span>
+                  <span>PIN Galeri • Proofing Ready</span>
+                </div>
+                <div class="text-center py-1">
+                  <p class="text-[10px] uppercase tracking-[0.2em] text-[#6d655b]">Signature Wedding Archive</p>
+                  <p class="text-lg md:text-xl font-normal tracking-[-0.02em] mt-0.5">Arya & Nadine</p>
+                </div>
+                <div class="grid grid-cols-12 gap-2.5">
+                  <div class="col-span-7 aspect-[4/5] overflow-hidden bg-black/10">
+                    <img
+                      src="https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=700&q=80"
+                      alt="Wedding Editorial"
+                      class="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div class="col-span-5 flex flex-col gap-2.5">
+                    <div class="aspect-square overflow-hidden bg-black/10">
+                      <img
+                        src="https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=500&q=80"
+                        alt="Ring Detail"
+                        class="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div class="flex-1 bg-[#1e1d1c] text-white p-3 flex flex-col justify-between">
+                      <span class="text-[9px] uppercase tracking-[0.14em] text-white/60">Status Cetak</span>
+                      <span class="text-xs leading-snug">Album 25x30cm<br />20 Sheet Layflat</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="pt-1 flex items-center justify-between text-[10px] tracking-[0.15em] uppercase font-semibold">
+                  <span>Plataran Senayan</span>
+                  <a href="/galeri/arya-nadine" class="underline">Buka Galeri →</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =====================================================================
+       SECTION 2: OFF-WHITE AVAILABILITY & TRACKING BAR (#F3F2EE)
+       ===================================================================== -->
+  <section class="bg-[#f3f2ee] border-b border-black/8">
+    <div class="max-w-[1380px] mx-auto px-5 md:px-10 py-12 md:py-14">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+        <div class="lg:col-span-5 space-y-1.5">
+          <h2 class="text-xl md:text-2xl font-normal tracking-[-0.025em] text-[#121212]">
+            Cek ketersediaan tanggal acara Anda
+          </h2>
+          <p class="text-xs md:text-sm text-[#5e5d59]">
+            Periksa kuota tim lapangan & editor kami secara instan sebelum mengunci jadwal.
+          </p>
+        </div>
+
+        <div class="lg:col-span-7 space-y-3">
+          <form action="/cek-tanggal" method="GET" class="flex flex-col sm:flex-row bg-white border border-black/15">
+            <input
+              type="date"
+              name="tanggal"
+              value="2026-11-07"
+              required
+              class="flex-1 px-4 py-4 text-sm text-[#121212] bg-white focus:outline-none border-b sm:border-b-0 sm:border-r border-black/10"
+            />
+            <select
+              name="kategori"
+              class="px-4 py-4 text-sm text-[#121212] bg-white focus:outline-none border-b sm:border-b-0 border-black/10"
+            >
+              <option value="wedding">Wedding</option>
+              <option value="prewedding">Prewedding</option>
+              <option value="wisuda">Wisuda</option>
+              <option value="event">Lamaran / Event</option>
+            </select>
+            <button type="submit" class="btn-sq-black shrink-0 !py-4 !px-8">Cek Jadwal</button>
+          </form>
+
+          <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-[#5e5d59]">
+            <a href="/portal" class="hover:text-[#121212] underline underline-offset-4">
+              Sudah memiliki kode booking? Lacak progres pengerjaan & percetakan →
+            </a>
+            <span class="text-[11px] text-[#5e5d59]">Contoh kode aktif: <strong class="text-[#121212]">RV-2610-001</strong></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =====================================================================
+       SECTION 3: WARM STONE 3-STEP EDITORIAL PROCESS (#E5E4DF)
+       ===================================================================== -->
+  <section class="bg-[#e5e4df]">
+    <div class="max-w-[1380px] mx-auto px-5 md:px-10 py-20 md:py-28">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
+        <!-- Left Framed Editorial Card -->
+        <div class="lg:col-span-6">
+          <div class="bg-white p-6 md:p-10 shadow-sm border border-black/5">
+            <div class="grid grid-cols-12 bg-[#f5f3ee] border border-black/8 overflow-hidden">
+              <div class="col-span-7 aspect-[4/4] bg-[#991b1b] overflow-hidden relative">
+                <img
+                  src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=85"
+                  alt="Editorial Portrait Lighting"
+                  class="w-full h-full object-cover mix-blend-luminosity opacity-90"
+                />
+                <div class="absolute inset-0 bg-red-700/35 mix-blend-multiply"></div>
+              </div>
+              <div class="col-span-5 p-5 md:p-6 flex flex-col justify-between bg-[#efede7]">
+                <div class="text-[9px] uppercase tracking-[0.16em] text-[#5e5d59]">Ruang Visual</div>
+                <div class="space-y-2">
+                  <p class="text-base md:text-lg font-medium leading-tight tracking-[-0.02em]">
+                    Visual yang bercerita jujur.
+                  </p>
+                  <p class="text-[11px] text-[#5e5d59] leading-relaxed">
+                    Kurasi warna konsisten oleh dedicated in-house editor.
+                  </p>
+                </div>
+                <div class="text-[10px] uppercase tracking-[0.14em] font-semibold">01 — 03</div>
+              </div>
+            </div>
+            <div class="pt-5 flex items-center justify-between text-[11px] text-[#5e5d59]">
+              <span class="uppercase tracking-[0.14em] font-semibold text-[#121212]">RV® Workflow</span>
+              <span>Terintegrasi Kontrak Digital & Galeri</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right 3-Step Stacked Editorial Copy -->
+        <div class="lg:col-span-6 space-y-8">
+          <div class="pb-7 border-b border-black/12 space-y-2">
+            <h3 class="text-lg md:text-xl font-medium tracking-[-0.02em]">
+              1. Simulasi paket & kontrak S&K transparan
+            </h3>
+            <p class="text-sm text-[#4a4945] leading-relaxed">
+              Pilih paket Wedding, Prewedding, Wisuda, atau Event, sesuaikan add-on drone maupun album tambahan,
+              tanda tangani S&K secara digital, dan bayar DP via QRIS/Virtual Account atau transfer bank.
+            </p>
+          </div>
+
+          <div class="pb-7 border-b border-black/12 space-y-2">
+            <h3 class="text-lg md:text-xl font-medium tracking-[-0.02em]">
+              2. Pilih foto favorit di Galeri Proofing Interaktif
+            </h3>
+            <p class="text-sm text-[#4a4945] leading-relaxed">
+              Tak perlu mencatat ratusan kode file manual lewat chat. Klik langsung foto yang ingin di-retouch dan
+              dimasukkan ke album kolase menggunakan PIN khusus klien, lengkap dengan catatan detail per foto.
+            </p>
+          </div>
+
+          <div class="space-y-2">
+            <h3 class="text-lg md:text-xl font-medium tracking-[-0.02em]">
+              3. Pantau pengerjaan paralel & tracking percetakan
+            </h3>
+            <p class="text-sm text-[#4a4945] leading-relaxed">
+              Ikuti progres terpisah dari <strong>Editor Foto</strong> dan <strong>Editor Video</strong> secara
+              real-time, setujui desain layout album sebelum naik cetak, dan pantau status QC fisik hingga resi kurir.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =====================================================================
+       SECTION 4: PURE WHITE INTERACTIVE CATEGORY SWITCHER (#FFFFFF)
+       ===================================================================== -->
+  <section class="bg-white">
+    <div class="max-w-[1380px] mx-auto px-5 md:px-10 py-24 md:py-32 space-y-16">
+      <!-- Top Split Header -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div class="lg:col-span-6">
+          <h2 class="display-lg text-[#121212]">
+            Layanan dokumentasi<br />untuk setiap momen
+          </h2>
+        </div>
+        <div class="lg:col-span-6 space-y-5 lg:pt-2">
+          <p class="text-sm md:text-base text-[#4a4945] leading-relaxed max-w-xl">
+            Setiap kategori acara memiliki pendekatan pencahayaan, komposisi kru lapangan, dan karakter pengeditan
+            yang dirancang khusus agar emosi momen Anda terekam utuh.
+          </p>
+          <a href="/layanan" class="link-sq-arrow text-[#121212]">Jelajahi Semua Paket & Harga →</a>
+        </div>
+      </div>
+
+      <!-- Interactive Left Category List + Right Framed Preview -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center" id="category-switcher">
+        <div class="lg:col-span-4 space-y-3">
+          {
+            showcaseCategories.map((cat, idx) => (
+              <button
+                type="button"
+                data-cat-btn={idx}
+                class:list={[
+                  'cat-switch-btn w-full text-left py-2 flex items-center justify-between group transition cursor-pointer',
+                  idx === 0 ? 'text-[#121212] font-medium' : 'text-[#8c8b85] hover:text-[#121212]',
+                ]}
+              >
+                <span class="text-2xl md:text-[28px] tracking-[-0.025em]">{cat.title}</span>
+                <span class:list={['cat-arrow text-lg transition', idx === 0 ? 'opacity-100' : 'opacity-0']}>→</span>
+              </button>
+            ))
+          }
+        </div>
+
+        <div class="lg:col-span-8">
+          {
+            showcaseCategories.map((cat, idx) => (
+              <div
+                data-cat-panel={idx}
+                class:list={[
+                  'cat-switch-panel border border-black/12 bg-[#1a1817] text-white overflow-hidden shadow-lg',
+                  idx === 0 ? 'block' : 'hidden',
+                ]}
+              >
+                <div class="px-5 py-3 bg-[#141312] border-b border-white/10 flex items-center justify-between text-[10px] uppercase tracking-[0.15em] text-white/65">
+                  <span>Ruang Visual • {cat.subtitle}</span>
+                  <span>Mulai dari {cat.priceFrom}</span>
+                </div>
+                <div class="relative aspect-[16/10] overflow-hidden">
+                  <img src={cat.image} alt={cat.title} class="w-full h-full object-cover" />
+                  <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                  <div class="absolute bottom-0 inset-x-0 p-6 md:p-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+                    <div class="space-y-1.5">
+                      <p class="text-[10px] uppercase tracking-[0.16em] text-white/70">{cat.caption}</p>
+                      <p class="text-xl md:text-2xl font-normal tracking-[-0.02em]">{cat.deliverable}</p>
+                    </div>
+                    <a
+                      href={`/booking?kategori=${cat.key === 'corporate' ? 'event' : cat.key}`}
+                      class="btn-sq-white shrink-0"
+                    >
+                      Pilih Kategori Ini
+                    </a>
+                  </div>
+                </div>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =====================================================================
+       SECTION 5: MONUMENTAL DARK OBSIDIAN EDITORIAL BLOCK (#1E1D1C)
+       ===================================================================== -->
+  <section class="bg-[#1e1d1c] text-white">
+    <div class="max-w-[1380px] mx-auto px-5 md:px-10 py-24 md:py-36 space-y-28">
+      <!-- Giant Stacked Headline -->
+      <div class="max-w-3xl space-y-6">
+        <h2 class="display-xl text-white">
+          Kendali penuh<br />
+          dari liputan<br />
+          hingga cetakan
+        </h2>
+      </div>
+
+      <!-- Sub-feature 5A: Client Proofing Gallery Showcase -->
+      <div class="space-y-10">
+        <h3 class="display-md text-white max-w-md">
+          Galeri interaktif yang dirancang untuk kenyamanan memilih
+        </h3>
+
+        <div
+          class="relative p-6 sm:p-10 md:p-16 bg-cover bg-center border border-white/10"
+          style="background-image: linear-gradient(125deg, rgba(145, 36, 26, 0.88), rgba(45, 22, 18, 0.92)), url('https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=1600&q=80');"
+        >
+          <!-- Framed Browser Window Mockup -->
+          <div class="max-w-4xl mx-auto bg-[#f6f4ef] text-[#121212] shadow-2xl border border-black/20">
+            <div class="px-4 py-2.5 bg-[#161514] text-white flex items-center justify-between text-[10px] tracking-[0.14em] uppercase">
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 bg-white/30 inline-block"></span>
+                <span class="w-2 h-2 bg-white/30 inline-block"></span>
+                <span class="ml-2 text-white/75">ruangvisual.id/galeri/arya-nadine</span>
+              </div>
+              <span class="text-emerald-400">PIN Klien Aktif • Kuota 5/8 Terpilih</span>
+            </div>
+            <div class="p-6 md:p-8 grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+              <div class="md:col-span-5 space-y-3">
+                <span class="eyebrow-label text-[#8a3227]">Client Proofing System</span>
+                <p class="text-2xl font-normal tracking-[-0.03em] leading-tight">
+                  2026 Wedding Collection — Arya & Nadine
+                </p>
+                <p class="text-xs text-[#5e5d59] leading-relaxed">
+                  Klik foto pilihan untuk di-retouch dan dimasukkan ke dalam Album Magazine, lalu setujui draft layout
+                  sebelum dikirim ke lab cetak.
+                </p>
+                <a href="/galeri/arya-nadine" class="btn-sq-black !py-2.5 !px-5 !text-[10px]">
+                  Coba Pilih Foto Sekarang
+                </a>
+              </div>
+              <div class="md:col-span-7 grid grid-cols-3 gap-2.5">
+                <div class="relative aspect-[3/4] overflow-hidden border-2 border-[#121212]">
+                  <img
+                    src="https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=500&q=80"
+                    alt="Selected 1"
+                    class="w-full h-full object-cover"
+                  />
+                  <span class="absolute top-2 left-2 bg-[#121212] text-white text-[9px] px-1.5 py-0.5 uppercase tracking-wider">
+                    ✓ Cover
+                  </span>
+                </div>
+                <div class="relative aspect-[3/4] overflow-hidden border-2 border-[#121212]">
+                  <img
+                    src="https://images.unsplash.com/photo-1606800052052-a08af7148866?auto=format&fit=crop&w=500&q=80"
+                    alt="Selected 2"
+                    class="w-full h-full object-cover"
+                  />
+                  <span class="absolute top-2 left-2 bg-[#121212] text-white text-[9px] px-1.5 py-0.5 uppercase tracking-wider">
+                    ✓ Album
+                  </span>
+                </div>
+                <div class="relative aspect-[3/4] overflow-hidden opacity-85">
+                  <img
+                    src="https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=500&q=80"
+                    alt="Selected 3"
+                    class="w-full h-full object-cover"
+                  />
+                  <span class="absolute bottom-2 right-2 bg-white/90 text-[#121212] text-[9px] px-1.5 py-0.5 font-mono">
+                    RV_0231
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 pt-2">
+          <div class="md:col-span-5">
+            <p class="text-sm font-medium text-white">Galeri Proofing & Integrasi Google Drive</p>
+          </div>
+          <div class="md:col-span-7 space-y-4">
+            <p class="text-sm text-white/70 leading-relaxed">
+              Dilengkapi proteksi watermark otomatis selama masa pratinjau, komentar revisi langsung pada tiap foto,
+              serta pembukaan kunci tautan Master 4K Google Drive begitu pelunasan terverifikasi.
+            </p>
+            <a href="/galeri/arya-nadine" class="link-sq-arrow text-white">Jelajahi Galeri Klien →</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sub-feature 5B: Iconic "SCHEDULE" Card Showcase -->
+      <div class="space-y-10 pt-6 border-t border-white/10">
+        <h3 class="display-md text-white max-w-md">
+          Jadwal terukur untuk waktu dan momen berharga Anda
+        </h3>
+
+        <div
+          class="relative p-6 sm:p-10 md:p-16 bg-cover bg-center border border-white/10"
+          style="background-image: linear-gradient(180deg, rgba(28, 22, 19, 0.68), rgba(28, 22, 19, 0.82)), url('https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=1600&q=80');"
+        >
+          <!-- Exact Tribute to the "SCHEDULE" UI Card in the Reference Screenshot -->
+          <div class="max-w-3xl mx-auto bg-[#f5f2eb] text-[#121212] p-6 sm:p-10 shadow-2xl">
+            <div class="border-b-2 border-[#3b1c16] pb-4 mb-6 flex items-baseline justify-between gap-4">
+              <p class="text-3xl sm:text-5xl font-bold tracking-[0.08em] uppercase text-[#3b1c16]">SCHEDULE</p>
+              <span class="text-[10px] uppercase tracking-[0.16em] text-[#5e5d59]">Real-Time Slot 2026</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+              <div class="md:col-span-5 aspect-[4/5] overflow-hidden bg-black/10">
+                <img
+                  src="https://images.unsplash.com/photo-1522673607200-164d1b6ce486?auto=format&fit=crop&w=700&q=80"
+                  alt="Session Booking"
+                  class="w-full h-full object-cover"
+                />
+              </div>
+              <div class="md:col-span-7 divide-y divide-black/12">
+                <div class="py-4 flex items-center justify-between gap-4">
+                  <div>
+                    <p class="text-sm font-semibold">Signature Editorial Wedding</p>
+                    <p class="text-xs text-[#5e5d59]">10 Jam Liputan • 5 Kru • {formatRupiah(18500000)}</p>
+                  </div>
+                  <a href="/booking?paket=pkg-wed-signature" class="btn-sq-black !py-2 !px-4 !text-[10px]">Book</a>
+                </div>
+                <div class="py-4 flex items-center justify-between gap-4">
+                  <div>
+                    <p class="text-sm font-semibold">Prewedding Conceptual Session</p>
+                    <p class="text-xs text-[#5e5d59]">8 Jam Outdoor • Stylist • {formatRupiah(7900000)}</p>
+                  </div>
+                  <a href="/booking?paket=pkg-pre-destination" class="btn-sq-black !py-2 !px-4 !text-[10px]">Book</a>
+                </div>
+                <div class="py-4 flex items-center justify-between gap-4">
+                  <div>
+                    <p class="text-sm font-semibold">Graduation Heritage & Family</p>
+                    <p class="text-xs text-[#5e5d59]">3 Jam Sesi Kampus + Reels • {formatRupiah(2450000)}</p>
+                  </div>
+                  <a href="/booking?paket=pkg-wis-heritage" class="btn-sq-black !py-2 !px-4 !text-[10px]">Book</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 pt-2">
+          <div class="md:col-span-5">
+            <p class="text-sm font-medium text-white">Penjadwalan Tim Freelance Lapangan Fleksibel</p>
+          </div>
+          <div class="md:col-span-7 space-y-4">
+            <p class="text-sm text-white/70 leading-relaxed">
+              Didukung jaringan fotografer, videografer, dan pilot drone terkurasi dengan standar peralatan setara,
+              memastikan ketersediaan tim terbaik bahkan di musim puncak pernikahan dan wisuda.
+            </p>
+            <a href="/cek-tanggal" class="link-sq-arrow text-white">Lihat Kalender Ketersediaan →</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sub-feature 5C & 5D: Alternating 2-Column Editorial Feature Rows -->
+      <div class="space-y-20 pt-10 border-t border-white/10">
+        <!-- Row 1: Text Left, Card Right -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+          <div class="lg:col-span-5 space-y-4">
+            <p class="eyebrow-label text-white/50">Dual-Track Post Production</p>
+            <h4 class="text-2xl md:text-3xl font-normal tracking-[-0.025em]">
+              1 Editor Foto & 1 Editor Video berdedikasi penuh
+            </h4>
+            <p class="text-sm text-white/70 leading-relaxed">
+              Setiap project pascaproduksi berjalan pada dua jalur spesialis secara paralel: Editor Video mengerjakan
+              Teaser Reels kilat H+2 serta film sinematik, sementara Editor Foto menjaga konsistensi warna kulit dan
+              tata letak album.
+            </p>
+            <a href="/portal/RV-2610-001" class="link-sq-arrow text-white">Pantau Contoh Live Tracker →</a>
+          </div>
+
+          <div class="lg:col-span-7 bg-[#292725] p-6 sm:p-10 border border-white/10">
+            <div class="bg-[#fbf9f4] text-[#121212] p-6 space-y-4 max-w-lg mx-auto shadow-lg">
+              <div class="flex items-center justify-between text-[10px] uppercase tracking-[0.14em] text-[#5e5d59]">
+                <span>Dual-Track SLA Engine</span>
+                <span class="bg-amber-100 text-amber-900 px-2 py-0.5 font-semibold">SLA Auto-Pause</span>
+              </div>
+              <p class="text-base font-medium">The Wedding of Arya & Nadine (RV-2610-001)</p>
+              <div class="space-y-2.5 text-xs">
+                <div class="p-3 bg-white border border-black/10 flex items-center justify-between">
+                  <span>Track Foto (Dimas Saputra)</span>
+                  <span class="font-semibold">Menunggu Pilihan Klien</span>
+                </div>
+                <div class="p-3 bg-white border border-black/10 flex items-center justify-between">
+                  <span>Track Video Teaser (Kevin Mahendra)</span>
+                  <span class="text-emerald-700 font-semibold">✓ Selesai H+2</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Row 2: Card Left, Text Right -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+          <div class="lg:col-span-7 order-2 lg:order-1 bg-[#292725] p-6 sm:p-10 border border-white/10">
+            <div class="bg-white text-[#121212] p-6 space-y-4 max-w-lg mx-auto shadow-lg">
+              <p class="eyebrow-label text-[#5e5d59]">8-Stage Print Production</p>
+              <div class="space-y-2.5 text-xs divide-y divide-black/10">
+                <div class="pt-2 flex items-center justify-between">
+                  <span>✓ Approval Layout Klien</span>
+                  <span class="text-emerald-700 font-semibold">Terkonfirmasi</span>
+                </div>
+                <div class="pt-2.5 flex items-center justify-between">
+                  <span>✓ Grafir Laser Box Kayu Jati</span>
+                  <span class="font-mono text-[11px]">"Arya & Nadine"</span>
+                </div>
+                <div class="pt-2.5 flex items-center justify-between">
+                  <span>✓ Quality Control Fisik Studio</span>
+                  <span class="bg-[#121212] text-white px-2 py-0.5 text-[10px] uppercase">Lolos QC</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="lg:col-span-5 order-1 lg:order-2 space-y-4">
+            <p class="eyebrow-label text-white/50">Print Fulfillment & QC</p>
+            <h4 class="text-2xl md:text-3xl font-normal tracking-[-0.025em]">
+              Tracking percetakan bebas salah cetak
+            </h4>
+            <p class="text-sm text-white/70 leading-relaxed">
+              Sistem mengunci pengiriman file ke mitra lab cetak sebelum Anda menyetujui desain layout secara digital.
+              Setiap album dan frame melewati inspeksi fisik di studio sebelum dikirim menggunakan resi terlacak.
+            </p>
+            <a href="/admin/percetakan" class="link-sq-arrow text-white">Lihat Alur Percetakan →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =====================================================================
+       SECTION 6: SIGNATURE MUTED LAVENDER EDITORIAL SECTION (#D5D2E2)
+       ===================================================================== -->
+  <section class="bg-[#d5d2e2] text-[#121212]">
+    <div class="max-w-[1380px] mx-auto px-5 md:px-10 py-24 md:py-32 space-y-16">
+      <h2 class="display-xl text-[#121212] max-w-3xl">
+        Ketenangan di setiap<br />
+        tahap pemesanan
+      </h2>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+        <!-- Left 3 Editorial Blocks -->
+        <div class="lg:col-span-5 space-y-8">
+          <div class="space-y-1.5">
+            <h3 class="text-base font-semibold tracking-[-0.01em]">Pembayaran Hybrid Otomatis & Manual</h3>
+            <p class="text-sm text-[#32303a] leading-relaxed">
+              Dukung pembayaran DP, cicilan, maupun pelunasan melalui QRIS & Virtual Account (otomatis terverifikasi
+              detik itu juga) atau transfer bank manual dengan unggah bukti bayar.
+            </p>
+          </div>
+
+          <div class="space-y-1.5">
+            <h3 class="text-base font-semibold tracking-[-0.01em]">Kontrak Digital & Privasi Klien Ketat</h3>
+            <p class="text-sm text-[#32303a] leading-relaxed">
+              Butuh sesi tertutup tanpa unggahan media sosial? Aktifkan opsi <em>Private Session</em> saat tanda
+              tangan kontrak digital — sistem memberi penanda merah otomatis ke seluruh kru dan editor.
+            </p>
+          </div>
+
+          <div class="space-y-1.5">
+            <h3 class="text-base font-semibold tracking-[-0.01em]">Kwitansi Resmi & Garansi Arsip Cloud</h3>
+            <p class="text-sm text-[#32303a] leading-relaxed">
+              Setiap transaksi tercatat rapi menjadi invoice & kwitansi resmi, disertai pencadangan file di NAS Studio
+              serta Google Drive hingga 6 bulan penuh.
+            </p>
+          </div>
+
+          <div class="pt-2">
+            <a href="/syarat-ketentuan" class="link-sq-arrow text-[#121212]">Pelajari Syarat & Ketentuan →</a>
+          </div>
+        </div>
+
+        <!-- Right Vivid Artistic Showcase Square -->
+        <div class="lg:col-span-7">
+          <div class="relative bg-[#2b1972] p-8 sm:p-14 overflow-hidden shadow-xl">
+            <div
+              class="absolute inset-0 opacity-65 bg-cover bg-center mix-blend-screen"
+              style="background-image: url('https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=1200&q=80');"
+            >
+            </div>
+
+            <div class="relative max-w-xs mx-auto bg-white/95 backdrop-blur p-5 text-[#121212] shadow-2xl space-y-4">
+              <div class="text-[10px] uppercase tracking-[0.15em] text-[#5e5d59] flex justify-between">
+                <span>Ruang Visual</span>
+                <span>Kwitansi Resmi</span>
+              </div>
+              <div class="aspect-square overflow-hidden">
+                <img
+                  src="https://images.unsplash.com/photo-1520854221256-17451cc331bf?auto=format&fit=crop&w=600&q=80"
+                  alt="Celebration"
+                  class="w-full h-full object-cover"
+                />
+              </div>
+              <div>
+                <p class="text-xs font-semibold">Signature Wedding Package</p>
+                <p class="text-[11px] text-[#5e5d59]">QRIS & Virtual Account Verified</p>
+              </div>
+            </div>
+
+            <!-- Floating Crisp Status Pill (Matching Screenshot Detail) -->
+            <div class="relative mt-6 sm:mt-0 sm:absolute sm:bottom-6 sm:right-6 bg-white text-[#121212] px-4 py-2.5 shadow-lg text-xs font-medium flex items-center gap-2">
+              <span class="w-2 h-2 bg-emerald-500 inline-block"></span>
+              <span>Link Master 4K & Album Siap Dikirim</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =====================================================================
+       SECTION 7: WARM ALABASTER PORTFOLIO CAROUSEL + FAQ (#F6F4EF)
+       ===================================================================== -->
+  <section class="bg-[#f6f4ef] text-[#121212]">
+    <div class="max-w-[1380px] mx-auto px-5 md:px-10 py-24 md:py-32 space-y-20">
+      <div class="space-y-10">
+        <h2 class="display-xl text-[#121212] max-w-3xl">
+          Standar visual modern<br />
+          untuk kisah Anda
+        </h2>
+
+        <div class="flex items-end justify-between gap-4">
+          <div>
+            <p class="text-base md:text-lg font-medium">Karya dokumentasi pilihan Ruang Visual</p>
+            <a href="/portofolio" class="text-xs uppercase tracking-[0.14em] text-[#5e5d59] hover:text-[#121212] underline underline-offset-4">
+              Lihat seluruh arsip publik →
+            </a>
+          </div>
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              id="carousel-prev"
+              aria-label="Sebelumnya"
+              class="w-10 h-10 border border-black/20 bg-white hover:bg-[#121212] hover:text-white transition flex items-center justify-center cursor-pointer"
+            >
+              ←
+            </button>
+            <button
+              type="button"
+              id="carousel-next"
+              aria-label="Berikutnya"
+              class="w-10 h-10 border border-black/20 bg-white hover:bg-[#121212] hover:text-white transition flex items-center justify-center cursor-pointer"
+            >
+              →
+            </button>
+          </div>
+        </div>
+
+        <!-- Edge-to-Edge Color-Rich Portrait Cards -->
+        <div id="portfolio-strip" class="flex gap-5 overflow-x-auto no-scrollbar snap-x snap-mandatory pb-2">
+          {
+            publicStories.map((story) => (
+              <a
+                href={`/portofolio#${story.bookingCode}`}
+                class="snap-start shrink-0 w-[290px] sm:w-[360px] md:w-[410px] group relative aspect-[4/5] overflow-hidden bg-[#181817]"
+              >
+                <img
+                  src={story.coverImage}
+                  alt={story.eventTitle}
+                  class="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                />
+                <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent" />
+                <div class="absolute bottom-5 left-5 right-5 text-white flex items-end justify-between gap-3">
+                  <div>
+                    <p class="text-[10px] uppercase tracking-[0.16em] text-white/75">{story.categorySlug}</p>
+                    <p class="text-base font-medium mt-0.5">{story.clientName}</p>
+                  </div>
+                  <span class="text-xs opacity-80 group-hover:translate-x-1 transition">→</span>
+                </div>
+              </a>
+            ))
+          }
+        </div>
+      </div>
+
+      <!-- Bottom 2-Column "Cara Memulai & Pertanyaan Umum" Accordion -->
+      <div class="pt-16 border-t border-black/12 grid grid-cols-1 lg:grid-cols-12 gap-12">
+        <div class="lg:col-span-5 space-y-3">
+          <h3 class="text-2xl md:text-3xl font-normal tracking-[-0.025em]">
+            Cara memulai dokumentasi bersama kami
+          </h3>
+          <p class="text-sm text-[#5e5d59] max-w-sm leading-relaxed">
+            Seluruh alur mulai dari pengecekan jadwal hingga serah terima cetakan dirancang ringkas dan terdokumentasi.
+          </p>
+        </div>
+
+        <div class="lg:col-span-7 space-y-6">
+          <div class="space-y-3 text-sm text-[#302f2d] pb-6 border-b border-black/12">
+            <p class="font-semibold text-[#121212]">Langkah pemesanan cepat (01 — 04):</p>
+            <ol class="list-decimal list-inside space-y-2 leading-relaxed">
+              <li>Periksa ketersediaan tanggal acara pada menu <strong>Cek Tanggal</strong>.</li>
+              <li>Pilih paket utama dan tambahkan <em>add-on</em> sesuai kebutuhan acara Anda.</li>
+              <li>Tinjau klausul <strong>Syarat & Ketentuan</strong>, pilih preferensi privasi portofolio, lalu bubuhkan tanda tangan digital.</li>
+              <li>Selesaikan pembayaran DP via QRIS/Virtual Account atau unggah bukti transfer untuk mengunci jadwal.</li>
+            </ol>
+          </div>
+
+          <div class="divide-y divide-black/12 border-b border-black/12">
+            <details class="group py-4">
+              <summary class="flex items-center justify-between cursor-pointer text-sm font-medium list-none">
+                <span>Bagaimana sistem pemilihan foto edit & cetak album (Client Proofing)?</span>
+                <span class="text-lg transition group-open:rotate-45">+</span>
+              </summary>
+              <p class="pt-3 text-xs md:text-sm text-[#5e5d59] leading-relaxed">
+                Setelah liputan selesai dan file RAW diverifikasi di studio, Editor Foto mengunggah seluruh foto
+                terkurasi ke Galeri Klien berproteksi PIN. Anda cukup mengeklik tombol pilih pada foto yang diinginkan,
+                dan daftar kode otomatis masuk ke software Lightroom editor kami.
+              </p>
+            </details>
+
+            <details class="group py-4">
+              <summary class="flex items-center justify-between cursor-pointer text-sm font-medium list-none">
+                <span>Berapa lama estimasi pengerjaan foto, video teaser, dan percetakan album?</span>
+                <span class="text-lg transition group-open:rotate-45">+</span>
+              </summary>
+              <p class="pt-3 text-xs md:text-sm text-[#5e5d59] leading-relaxed">
+                Video Teaser / Reels diprioritaskan selesai pada H+2 hingga H+3 hari kerja oleh Editor Video kami.
+                Editing foto berlangsung 7–14 hari kerja sejak Anda mengunci pilihan foto, dan produksi cetak lab
+                memakan waktu 5–10 hari kerja setelah desain layout Anda setujui.
+              </p>
+            </details>
+
+            <details class="group py-4">
+              <summary class="flex items-center justify-between cursor-pointer text-sm font-medium list-none">
+                <span>Apakah kami bisa meminta agar foto acara tidak diunggah ke media sosial?</span>
+                <span class="text-lg transition group-open:rotate-45">+</span>
+              </summary>
+              <p class="pt-3 text-xs md:text-sm text-[#5e5d59] leading-relaxed">
+                Sangat bisa. Pada saat mengisi kontrak digital di halaman Booking, cukup pilih opsi
+                <strong>Private Session (Tidak Diizinkan Publikasi)</strong> tanpa biaya tambahan apa pun.
+              </p>
+            </details>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script is:inline>
+    // Interactive Category Switcher
+    const catBtns = document.querySelectorAll('[data-cat-btn]');
+    const catPanels = document.querySelectorAll('[data-cat-panel]');
+    catBtns.forEach((btn) => {
+      const activate = () => {
+        const target = btn.getAttribute('data-cat-btn');
+        catBtns.forEach((b) => {
+          const active = b.getAttribute('data-cat-btn') === target;
+          b.classList.toggle('text-[#121212]', active);
+          b.classList.toggle('font-medium', active);
+          b.classList.toggle('text-[#8c8b85]', !active);
+          const arrow = b.querySelector('.cat-arrow');
+          if (arrow) arrow.classList.toggle('opacity-100', active);
+          if (arrow) arrow.classList.toggle('opacity-0', !active);
+        });
+        catPanels.forEach((p) => {
+          p.classList.toggle('hidden', p.getAttribute('data-cat-panel') !== target);
+        });
+      };
+      btn.addEventListener('click', activate);
+      btn.addEventListener('mouseenter', activate);
+    });
+
+    // Portfolio Horizontal Carousel Controls
+    const strip = document.getElementById('portfolio-strip');
+    const prevBtn = document.getElementById('carousel-prev');
+    const nextBtn = document.getElementById('carousel-next');
+    if (strip && prevBtn && nextBtn) {
+      prevBtn.addEventListener('click', () => strip.scrollBy({ left: -420, behavior: 'smooth' }));
+      nextBtn.addEventListener('click', () => strip.scrollBy({ left: 420, behavior: 'smooth' }));
+    }
+  </script>
+</EditorialLayout>

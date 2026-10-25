@@ -1,0 +1,192 @@
+---
+import EditorialLayout from '../../../layouts/EditorialLayout.astro';
+import { getFullStudioSnapshot } from '../../../lib/analytics';
+import { formatRupiah, formatShortDate } from '../../../lib/format';
+
+const { invoiceId } = Astro.params;
+const snap = await getFullStudioSnapshot();
+
+const invoice = snap.invoices.find((i) => i.id === invoiceId) || snap.invoices[0];
+const booking = snap.bookings.find((b) => b.id === invoice?.bookingId) || snap.bookings[0];
+const pkg = snap.packages.find((p) => p.id === booking?.packageId);
+---
+
+<EditorialLayout title={`Pembayaran ${invoice.invoiceNumber} — Ruang Visual`} headerTheme="light">
+  <section class="bg-[#f3f2ee] py-14 md:py-20">
+    <div class="max-w-[1160px] mx-auto px-5 md:px-10 space-y-10">
+      <!-- Top Printable Official Invoice Header -->
+      <div class="bg-white border border-black/15 p-8 md:p-10 space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-black/12 pb-6">
+          <div>
+            <p class="eyebrow-label text-[#5e5d59]">Invoice & Kontrak Layanan Resmi</p>
+            <h1 class="text-2xl md:text-3xl font-normal tracking-[-0.025em] mt-1">{invoice.invoiceNumber}</h1>
+            <p class="text-xs text-[#5e5d59] mt-1">
+              Kode Booking: <strong class="text-[#121212]">{booking.bookingCode}</strong> • Kontrak: {booking.termsVersionCode} (Ditandatangani {booking.signedAt})
+            </p>
+          </div>
+          <div class="flex items-center gap-3">
+            <span
+              class:list={[
+                'px-3.5 py-1.5 text-[10px] uppercase tracking-[0.15em] font-semibold',
+                invoice.status === 'PAID'
+                  ? 'bg-emerald-100 text-emerald-900'
+                  : invoice.status === 'WAITING_VERIFICATION'
+                    ? 'bg-amber-100 text-amber-900'
+                    : 'bg-[#121212] text-white',
+              ]}
+            >
+              {invoice.status}
+            </span>
+            <button type="button" onclick="window.print()" class="no-print btn-sq-outline-dark !py-2 !px-3.5 !text-[10px] cursor-pointer">
+              Cetak PDF
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs md:text-sm">
+          <div>
+            <p class="text-[#5e5d59] uppercase text-[10px] tracking-widest">Ditagihkan Kepada</p>
+            <p class="font-semibold mt-1">{booking.clientName}</p>
+            <p class="text-[#5e5d59]">{booking.clientPhone} • {booking.clientEmail}</p>
+          </div>
+          <div>
+            <p class="text-[#5e5d59] uppercase text-[10px] tracking-widest">Detail Acara</p>
+            <p class="font-semibold mt-1">{booking.eventTitle}</p>
+            <p class="text-[#5e5d59]">{formatShortDate(booking.eventDate)} • {booking.venueName}</p>
+          </div>
+          <div>
+            <p class="text-[#5e5d59] uppercase text-[10px] tracking-widest">Nominal Tagihan Saat Ini</p>
+            <p class="text-2xl font-normal tabular-nums mt-1">{formatRupiah(invoice.amount)}</p>
+            <p class="text-[#5e5d59] text-xs">{invoice.description}</p>
+          </div>
+        </div>
+      </div>
+
+      {
+        invoice.status === 'PAID' ? (
+          <div class="bg-emerald-950 text-white p-8 md:p-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+            <div class="space-y-1.5">
+              <p class="eyebrow-label text-emerald-300">Pembayaran Lunas Terverifikasi</p>
+              <h2 class="text-2xl font-normal">Terima kasih! Tagihan ini telah diterima pada {invoice.paidAt}.</h2>
+              <p class="text-xs text-white/75">Metode: {invoice.paymentChannel} • {invoice.proofNote}</p>
+            </div>
+            <a href={`/portal/${booking.bookingCode}`} class="btn-sq-white shrink-0">
+              Buka Portal Klien →
+            </a>
+          </div>
+        ) : (
+          <div class="no-print grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Option A: Payment Gateway Otomatis (Midtrans / Xendit) -->
+            <div class="bg-white border border-black/15 p-8 space-y-6 flex flex-col justify-between">
+              <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                  <span class="eyebrow-label text-emerald-800">Rekomendasi • Verifikasi Detik Itu Juga</span>
+                  <span class="text-[10px] font-mono bg-[#f3f2ee] px-2 py-0.5">MIDTRANS / XENDIT</span>
+                </div>
+                <h2 class="text-xl font-medium tracking-[-0.02em]">
+                  Opsi 1: Payment Gateway Otomatis (QRIS & Virtual Account)
+                </h2>
+                <p class="text-xs text-[#5e5d59] leading-relaxed">
+                  Jadwal langsung terkunci otomatis dan kwitansi terbit seketika begitu pembayaran diterima melalui
+                  webhook tanpa menunggu cek admin.
+                </p>
+
+                <!-- Simulated QRIS / VA Box -->
+                <div class="bg-[#f6f4ef] border border-black/10 p-5 flex items-center gap-5">
+                  <div class="w-24 h-24 bg-[#121212] text-white p-2 flex flex-col items-center justify-center text-center shrink-0">
+                    <span class="text-[9px] tracking-widest uppercase">QRIS</span>
+                    <span class="text-lg font-mono font-bold my-0.5">▣▤▥</span>
+                    <span class="text-[8px] text-white/65">RUANG VISUAL</span>
+                  </div>
+                  <div class="space-y-1 text-xs">
+                    <p class="font-semibold">BCA VA: 70012 8890 {booking.bookingCode.slice(-3)}</p>
+                    <p class="font-semibold">Mandiri VA: 88908 1120 {booking.bookingCode.slice(-3)}</p>
+                    <p class="text-[#5e5d59]">Total: <strong>{formatRupiah(invoice.amount)}</strong></p>
+                  </div>
+                </div>
+              </div>
+
+              <form method="POST" action="/api/actions" class="space-y-3 pt-4 border-t border-black/10">
+                <input type="hidden" name="action" value="pay_invoice_gateway" />
+                <input type="hidden" name="invoiceId" value={invoice.id} />
+                <input type="hidden" name="redirectTo" value={`/portal/${booking.bookingCode}`} />
+                <select name="paymentChannel" class="w-full px-3.5 py-3 border border-black/20 text-xs bg-white">
+                  <option value="Midtrans QRIS Instant">QRIS (Semua Mobile Banking & E-Wallet)</option>
+                  <option value="Midtrans BCA Virtual Account">BCA Virtual Account</option>
+                  <option value="Midtrans Mandiri Virtual Account">Mandiri Virtual Account</option>
+                  <option value="Xendit BRI Virtual Account">BRI Virtual Account</option>
+                </select>
+                <button type="submit" class="btn-sq-black w-full cursor-pointer">
+                  Bayar Otomatis Sekarang ({formatRupiah(invoice.amount)}) →
+                </button>
+              </form>
+            </div>
+
+            <!-- Option B: Transfer Bank Manual + Upload Bukti -->
+            <div class="bg-white border border-black/15 p-8 space-y-6 flex flex-col justify-between">
+              <div class="space-y-4">
+                <span class="eyebrow-label text-[#5e5d59]">Bebas Biaya Admin • Verifikasi Admin</span>
+                <h2 class="text-xl font-medium tracking-[-0.02em]">
+                  Opsi 2: Transfer Bank Manual + Konfirmasi Bukti
+                </h2>
+                <div class="bg-[#f6f4ef] border border-black/10 p-4 space-y-2 text-xs">
+                  <p>
+                    <strong>Bank BCA:</strong> 8720-445-991 a.n. PT Ruang Visual Kreasi
+                  </p>
+                  <p>
+                    <strong>Bank Mandiri:</strong> 124-00-9887766-5 a.n. PT Ruang Visual Kreasi
+                  </p>
+                </div>
+
+                <form method="POST" action="/api/actions" class="space-y-3">
+                  <input type="hidden" name="action" value="submit_manual_transfer" />
+                  <input type="hidden" name="invoiceId" value={invoice.id} />
+                  <input type="hidden" name="redirectTo" value={`/portal/${booking.bookingCode}`} />
+
+                  <div>
+                    <label class="block text-xs font-medium mb-1">Rekening Tujuan Transfer</label>
+                    <select name="targetBank" class="w-full px-3.5 py-2.5 border border-black/20 text-xs bg-white">
+                      <option value="BCA Bisnis Operasional">BCA — 8720-445-991</option>
+                      <option value="Mandiri Giro Studio">Mandiri — 124-00-9887766-5</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium mb-1">Nama Pemilik Rekening Pengirim *</label>
+                    <input
+                      type="text"
+                      name="senderInfo"
+                      required
+                      placeholder="Contoh: BCA a.n. Arya Wijaya"
+                      class="w-full px-3.5 py-2.5 border border-black/20 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium mb-1">Nomor Referensi / Unggah Bukti Transfer *</label>
+                    <input
+                      type="text"
+                      name="refNote"
+                      required
+                      placeholder="Nomor Ref Mutasi / Tautan Bukti Bayar"
+                      class="w-full px-3.5 py-2.5 border border-black/20 text-xs"
+                    />
+                  </div>
+                  <button type="submit" class="btn-sq-outline-dark w-full cursor-pointer mt-2">
+                    Kirim Bukti Transfer untuk Diverifikasi Admin
+                  </button>
+                </form>
+              </div>
+
+              <div class="pt-3 border-t border-black/10 text-[11px] text-[#5e5d59]">
+                Ingin memantau status setelah bayar? Kunjungi{' '}
+                <a href={`/portal/${booking.bookingCode}`} class="underline text-[#121212] font-semibold">
+                  Portal Klien ({booking.bookingCode})
+                </a>
+                .
+              </div>
+            </div>
+          </div>
+        )
+      }
+    </div>
+  </section>
+</EditorialLayout>

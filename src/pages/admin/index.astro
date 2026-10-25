@@ -1,0 +1,257 @@
+---
+import BackofficeLayout from '../../layouts/BackofficeLayout.astro';
+import { getFullStudioSnapshot } from '../../lib/analytics';
+import { formatRupiah, formatShortDate, PHOTO_TASK_LABELS, VIDEO_TASK_LABELS } from '../../lib/format';
+
+const snap = await getFullStudioSnapshot();
+const fin = snap.financeSummary;
+
+const pendingVerifications = snap.invoices.filter((i) => i.status === 'WAITING_VERIFICATION');
+const submittedRaws = snap.crewAssignments.filter((c) => c.rawStatus === 'SUBMITTED');
+const pendingQcPrints = snap.printOrders.filter((p) => p.status === 'ARRIVED_QC');
+const activePhotoCount = snap.photoTasks.filter((t) => t.status !== 'FINALIZED').length;
+const activeVideoCount = snap.videoTasks.filter((t) => t.mainStatus !== 'FINALIZED').length;
+---
+
+<BackofficeLayout
+  title="Executive Command Center"
+  subtitle="Ringkasan real-time keuangan studio, verifikasi pembayaran, antrean 2 editor, kru lapangan, & percetakan."
+  activeNav="overview"
+>
+  <!-- Top Executive Financial KPIs -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+    <div class="bg-[#181817] text-white p-6 space-y-1.5">
+      <p class="eyebrow-label text-white/50">Total Saldo Kas & Bank</p>
+      <p class="text-2xl md:text-3xl font-normal tabular-nums">{formatRupiah(fin.totalCashBalance)}</p>
+      <p class="text-[11px] text-white/60">5 Pos Rekening & Kas Aktif</p>
+    </div>
+
+    <div class="bg-white border border-black/12 p-6 space-y-1.5">
+      <p class="eyebrow-label text-[#5e5d59]">Nilai Kontrak Masuk (GMV)</p>
+      <p class="text-2xl md:text-3xl font-normal tabular-nums">{formatRupiah(fin.grossBookingValue)}</p>
+      <p class="text-[11px] text-[#5e5d59]">Piutang belum lunas: {formatRupiah(fin.totalReceivables)}</p>
+    </div>
+
+    <div class="bg-white border border-black/12 p-6 space-y-1.5">
+      <p class="eyebrow-label text-amber-800">Dana DP Mengendap (Unearned)</p>
+      <p class="text-2xl md:text-3xl font-normal tabular-nums text-amber-900">{formatRupiah(fin.unearnedRevenue)}</p>
+      <p class="text-[11px] text-[#5e5d59]">Wajib dijaga untuk biaya kru & cetak acara mendatang</p>
+    </div>
+
+    <div class="bg-white border border-black/12 p-6 space-y-1.5">
+      <p class="eyebrow-label text-emerald-800">Laba Operasional Bersih</p>
+      <p class="text-2xl md:text-3xl font-normal tabular-nums text-emerald-900">
+        {formatRupiah(fin.netOperatingProfit)}
+      </p>
+      <p class="text-[11px] text-[#5e5d59]">Laba Kotor Terlaksana dikurangi OPEX Studio</p>
+    </div>
+  </div>
+
+  <!-- Priority Action Alerts -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Alert 1: Pending Manual Bank Transfers -->
+    <div class="bg-white border border-black/15 p-6 space-y-4">
+      <div class="flex items-center justify-between border-b border-black/10 pb-3">
+        <span class="eyebrow-label text-amber-900">Verifikasi Transfer Manual</span>
+        <span class="text-xs font-mono font-bold bg-amber-100 px-2 py-0.5">{pendingVerifications.length}</span>
+      </div>
+      {
+        pendingVerifications.length === 0 ? (
+          <p class="text-xs text-[#5e5d59]">Seluruh bukti transfer manual telah diverifikasi.</p>
+        ) : (
+          pendingVerifications.map((inv) => (
+            <div class="bg-[#fbfaf7] p-4 border border-black/10 space-y-2.5 text-xs">
+              <div class="flex justify-between font-semibold">
+                <span class="font-mono">{inv.invoiceNumber}</span>
+                <span>{formatRupiah(inv.amount)}</span>
+              </div>
+              <p class="text-[#5e5d59] text-[11px]">{inv.proofNote}</p>
+              <div class="flex gap-2">
+                <form method="POST" action="/api/actions">
+                  <input type="hidden" name="action" value="verify_manual_payment" />
+                  <input type="hidden" name="invoiceId" value={inv.id} />
+                  <input type="hidden" name="decision" value="APPROVE" />
+                  <input type="hidden" name="redirectTo" value="/admin" />
+                  <button type="submit" class="btn-sq-black !py-1.5 !px-3 !text-[10px] cursor-pointer">
+                    ✓ Approve Mutasi
+                  </button>
+                </form>
+                <form method="POST" action="/api/actions">
+                  <input type="hidden" name="action" value="verify_manual_payment" />
+                  <input type="hidden" name="invoiceId" value={inv.id} />
+                  <input type="hidden" name="decision" value="REJECT" />
+                  <input type="hidden" name="redirectTo" value="/admin" />
+                  <button type="submit" class="btn-sq-outline-dark !py-1.5 !px-3 !text-[10px] cursor-pointer">
+                    Tolak
+                  </button>
+                </form>
+              </div>
+            </div>
+          ))
+        )
+      }
+    </div>
+
+    <!-- Alert 2: RAW Handover Verification Gate -->
+    <div class="bg-white border border-black/15 p-6 space-y-4">
+      <div class="flex items-center justify-between border-b border-black/10 pb-3">
+        <span class="eyebrow-label text-[#121212]">Verifikasi File RAW Kru</span>
+        <span class="text-xs font-mono font-bold bg-[#e5e4df] px-2 py-0.5">{submittedRaws.length}</span>
+      </div>
+      {
+        submittedRaws.length === 0 ? (
+          <p class="text-xs text-[#5e5d59]">Tidak ada antrean kartu memori/SSD kru yang menunggu pengecekan.</p>
+        ) : (
+          submittedRaws.map((ca) => {
+            const fr = snap.freelancers.find((f) => f.id === ca.freelancerId);
+            const bk = snap.bookings.find((b) => b.id === ca.bookingId);
+            return (
+              <div class="bg-[#fbfaf7] p-4 border border-black/10 space-y-2.5 text-xs">
+                <p class="font-semibold">
+                  {fr?.name} — <span class="font-mono">{bk?.bookingCode}</span>
+                </p>
+                <p class="text-[11px] text-[#5e5d59]">{ca.rawStorageNote}</p>
+                <form method="POST" action="/api/actions">
+                  <input type="hidden" name="action" value="admin_verify_raw" />
+                  <input type="hidden" name="assignmentId" value={ca.id} />
+                  <input type="hidden" name="redirectTo" value="/admin" />
+                  <button type="submit" class="btn-sq-black !py-1.5 !px-3.5 !text-[10px] cursor-pointer">
+                    ✓ Konfirmasi RAW Aman (Buka Kunci Fee)
+                  </button>
+                </form>
+              </div>
+            );
+          })
+        )
+      }
+    </div>
+
+    <!-- Alert 3: Physical Print Quality Control (QC) -->
+    <div class="bg-white border border-black/15 p-6 space-y-4">
+      <div class="flex items-center justify-between border-b border-black/10 pb-3">
+        <span class="eyebrow-label text-[#121212]">Cetakan Tiba — Menunggu QC Fisik</span>
+        <span class="text-xs font-mono font-bold bg-[#d5d2e2] px-2 py-0.5">{pendingQcPrints.length}</span>
+      </div>
+      {
+        pendingQcPrints.length === 0 ? (
+          <p class="text-xs text-[#5e5d59]">Seluruh cetakan yang tiba di studio telah diinspeksi.</p>
+        ) : (
+          pendingQcPrints.map((po) => {
+            const bk = snap.bookings.find((b) => b.id === po.bookingId);
+            return (
+              <div class="bg-[#fbfaf7] p-4 border border-black/10 space-y-2.5 text-xs">
+                <p class="font-semibold">{po.itemName}</p>
+                <p class="text-[11px] text-[#5e5d59]">
+                  {bk?.bookingCode} • Grafir: "{po.engravingText}"
+                </p>
+                <a href="/admin/percetakan" class="btn-sq-outline-dark !py-1.5 !px-3 !text-[10px]">
+                  Lakukan Inspeksi QC →
+                </a>
+              </div>
+            );
+          })
+        )
+      }
+    </div>
+  </div>
+
+  <!-- Dual-Editor Workload Capacity + Master Bookings Table -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <!-- Workload Monitor: 1 Photo Editor & 1 Video Editor -->
+    <div class="lg:col-span-5 bg-white border border-black/15 p-6 space-y-6">
+      <div class="border-b border-black/10 pb-3 flex items-center justify-between">
+        <div>
+          <p class="eyebrow-label text-[#5e5d59]">Bottleneck Guard</p>
+          <h2 class="text-lg font-medium mt-0.5">Kapasitas 1 Editor Foto & 1 Editor Video</h2>
+        </div>
+      </div>
+
+      <div class="space-y-5 text-xs">
+        <div class="p-4 bg-[#f6f4ef] border border-black/10 space-y-2">
+          <div class="flex justify-between font-semibold">
+            <span>Editor Foto — Dimas Saputra</span>
+            <span>{activePhotoCount} / 5 Slot Aktif</span>
+          </div>
+          <div class="w-full h-2 bg-black/10">
+            <div class="h-full bg-[#121212]" style={`width: ${Math.min(100, activePhotoCount * 20)}%`} />
+          </div>
+          <a href="/workspace/foto" class="inline-block underline text-[11px]">Buka Meja Kerja Editor Foto →</a>
+        </div>
+
+        <div class="p-4 bg-[#f6f4ef] border border-black/10 space-y-2">
+          <div class="flex justify-between font-semibold">
+            <span>Editor Video — Kevin Mahendra</span>
+            <span>{activeVideoCount} / 5 Slot Aktif</span>
+          </div>
+          <div class="w-full h-2 bg-black/10">
+            <div class="h-full bg-[#121212]" style={`width: ${Math.min(100, activeVideoCount * 20)}%`} />
+          </div>
+          <a href="/workspace/video" class="inline-block underline text-[11px]">Buka Meja Kerja Editor Video →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Projects Overview -->
+    <div class="lg:col-span-7 bg-white border border-black/15 p-6 space-y-4 overflow-x-auto">
+      <div class="flex items-center justify-between border-b border-black/10 pb-3">
+        <h2 class="text-lg font-medium">Status Produksi & Margin Seluruh Project</h2>
+        <a href="/admin/bookings" class="text-xs underline">Kelola Lengkap →</a>
+      </div>
+
+      <table class="w-full text-left text-xs border-collapse">
+        <thead>
+          <tr class="border-b border-black/15 text-[10px] uppercase tracking-wider text-[#5e5d59]">
+            <th class="py-2.5 pr-3">Kode</th>
+            <th class="py-2.5 pr-3">Klien & Tanggal</th>
+            <th class="py-2.5 pr-3">Foto / Video</th>
+            <th class="py-2.5 pr-3">Bayar</th>
+            <th class="py-2.5 text-right">Margin</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-black/8">
+          {
+            snap.jobCostings.map((jc) => {
+              const pt = snap.photoTasks.find((t) => t.bookingId === jc.booking.id);
+              const vt = snap.videoTasks.find((t) => t.bookingId === jc.booking.id);
+              return (
+                <tr>
+                  <td class="py-3 pr-3 font-mono font-semibold">
+                    <a href={`/portal/${jc.booking.bookingCode}`} class="underline">
+                      {jc.booking.bookingCode}
+                    </a>
+                    {!jc.booking.allowPortfolioPublish && (
+                      <span class="block text-[9px] text-red-800 font-bold uppercase">Private</span>
+                    )}
+                  </td>
+                  <td class="py-3 pr-3">
+                    <p class="font-medium">{jc.booking.clientName}</p>
+                    <p class="text-[11px] text-[#5e5d59]">{formatShortDate(jc.booking.eventDate)}</p>
+                  </td>
+                  <td class="py-3 pr-3 text-[11px]">
+                    <span class="block">F: {pt ? PHOTO_TASK_LABELS[pt.status]?.slice(0, 18) : '-'}</span>
+                    <span class="block text-[#5e5d59]">
+                      V: {vt ? VIDEO_TASK_LABELS[vt.mainStatus]?.slice(0, 18) : '-'}
+                    </span>
+                  </td>
+                  <td class="py-3 pr-3">
+                    <span
+                      class:list={[
+                        'px-2 py-0.5 text-[10px] font-semibold uppercase',
+                        jc.booking.paymentStatus === 'PAID'
+                          ? 'bg-emerald-100 text-emerald-900'
+                          : 'bg-amber-100 text-amber-900',
+                      ]}
+                    >
+                      {jc.booking.paymentStatus}
+                    </span>
+                  </td>
+                  <td class="py-3 text-right font-mono font-semibold">{jc.marginPercent}%</td>
+                </tr>
+              );
+            })
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</BackofficeLayout>

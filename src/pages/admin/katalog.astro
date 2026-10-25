@@ -1,0 +1,127 @@
+---
+import BackofficeLayout from '../../layouts/BackofficeLayout.astro';
+import { getFullStudioSnapshot } from '../../lib/analytics';
+import { formatRupiah, formatShortDate } from '../../lib/format';
+
+const snap = await getFullStudioSnapshot();
+---
+
+<BackofficeLayout
+  title="Katalog Paket, CRM Calon Klien & Kontrak S&K"
+  subtitle="Kelola prospek masuk (CRM), struktur harga paket & komisi editor, kupon promo, serta dokumen Syarat & Ketentuan."
+  activeNav="catalog"
+>
+  <!-- CRM Leads Pipeline -->
+  <div class="bg-white border border-black/15 p-6 space-y-5">
+    <div class="flex items-center justify-between border-b border-black/10 pb-3">
+      <div>
+        <p class="eyebrow-label text-[#5e5d59]">Lead & Inquiry Pipeline</p>
+        <h2 class="text-lg font-medium mt-0.5">CRM Prospek Calon Klien ({snap.leads.length})</h2>
+      </div>
+      <a href="/cek-tanggal" class="text-xs underline">Form Inquiry Publik ↗</a>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+      {
+        snap.leads.map((ld) => (
+          <div class="p-4 bg-[#fbfaf7] border border-black/12 flex flex-col justify-between gap-4">
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between">
+                <span class="uppercase text-[10px] font-semibold tracking-wider text-[#5e5d59]">{ld.categorySlug}</span>
+                <span class="px-2 py-0.5 bg-[#181817] text-white text-[10px] uppercase">{ld.status}</span>
+              </div>
+              <p class="text-sm font-semibold">{ld.prospectName}</p>
+              <p class="text-[#5e5d59]">
+                WA: {ld.phone} • Target: {formatShortDate(ld.targetDate)}
+              </p>
+              <p class="text-[11px] bg-white p-2.5 border border-black/8">{ld.notes}</p>
+            </div>
+
+            <form method="POST" action="/api/actions" class="flex gap-2">
+              <input type="hidden" name="action" value="update_lead_status" />
+              <input type="hidden" name="leadId" value={ld.id} />
+              <input type="hidden" name="redirectTo" value="/admin/katalog" />
+              <select name="status" class="flex-1 px-2.5 py-1.5 bg-white border border-black/20">
+                <option value="NEW" selected={ld.status === 'NEW'}>NEW</option>
+                <option value="FOLLOW_UP" selected={ld.status === 'FOLLOW_UP'}>FOLLOW_UP</option>
+                <option value="QUOTED" selected={ld.status === 'QUOTED'}>QUOTED</option>
+                <option value="WON" selected={ld.status === 'WON'}>WON (Converted)</option>
+                <option value="LOST" selected={ld.status === 'LOST'}>LOST</option>
+              </select>
+              <button type="submit" class="btn-sq-black !py-1.5 !px-3 !text-[10px] cursor-pointer">Update</button>
+            </form>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+
+  <!-- Master Packages & Editor Fee Matrix -->
+  <div class="bg-white border border-black/15 p-6 space-y-4 overflow-x-auto">
+    <h2 class="text-lg font-medium border-b border-black/10 pb-3">
+      Struktur Paket, Kuota Galeri & Skema Insentif 2 Editor
+    </h2>
+
+    <table class="w-full text-left text-xs border-collapse">
+      <thead>
+        <tr class="border-b border-black/15 text-[10px] uppercase tracking-wider text-[#5e5d59]">
+          <th class="py-2.5 pr-3">Nama Paket</th>
+          <th class="py-2.5 pr-3">Kategori</th>
+          <th class="py-2.5 pr-3 text-right">Harga Jual</th>
+          <th class="py-2.5 pr-3">Kuota Edit / Album</th>
+          <th class="py-2.5 pr-3 text-right">Komisi Editor Foto</th>
+          <th class="py-2.5 text-right">Komisi Editor Video</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-black/8 tabular-nums">
+        {
+          snap.packages.map((pkg) => (
+            <tr>
+              <td class="py-3 pr-3 font-semibold">{pkg.name}</td>
+              <td class="py-3 pr-3 uppercase text-[10px]">{pkg.categorySlug}</td>
+              <td class="py-3 pr-3 text-right font-medium">{formatRupiah(pkg.price)}</td>
+              <td class="py-3 pr-3">
+                {pkg.editedPhotoQuota} Edit / {pkg.albumPhotoQuota} Album
+              </td>
+              <td class="py-3 pr-3 text-right">{formatRupiah(pkg.photoEditorFee)}</td>
+              <td class="py-3 text-right">{formatRupiah(pkg.videoEditorFee)}</td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Active Vouchers & Terms Version -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="bg-white border border-black/15 p-6 space-y-3 text-xs">
+      <h3 class="text-base font-medium border-b border-black/10 pb-2">Voucher Diskon Aktif</h3>
+      {
+        snap.vouchers.map((v) => (
+          <div class="flex items-center justify-between py-2 border-b border-black/8">
+            <div>
+              <span class="font-mono font-bold bg-[#f3f2ee] px-2 py-0.5 mr-2">{v.code}</span>
+              <span>{v.title}</span>
+            </div>
+            <strong class="tabular-nums">-{formatRupiah(v.discountAmount)}</strong>
+          </div>
+        ))
+      }
+    </div>
+
+    <div class="bg-white border border-black/15 p-6 space-y-3 text-xs">
+      <h3 class="text-base font-medium border-b border-black/10 pb-2">Versi Dokumen Syarat & Ketentuan Aktif</h3>
+      {
+        snap.terms.map((tv) => (
+          <div class="space-y-2">
+            <p class="font-mono font-semibold">{tv.versionCode}</p>
+            <p class="text-[#5e5d59]">{tv.title}</p>
+            <a href="/syarat-ketentuan" target="_blank" class="inline-block underline font-semibold">
+              Pratinjau Dokumen Publik ↗
+            </a>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+</BackofficeLayout>

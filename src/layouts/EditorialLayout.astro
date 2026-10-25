@@ -1,0 +1,198 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+  headerTheme?: 'dark' | 'light';
+}
+
+const {
+  title = 'Ruang Visual — Dokumentasi Wedding, Prewedding, Wisuda & Event',
+  description = 'Platform dokumentasi foto, video, galeri proofing interaktif, dan percetakan album berstandar editorial modern.',
+  headerTheme = 'dark',
+} = Astro.props;
+
+const notice = Astro.url.searchParams.get('notice');
+const isDark = headerTheme === 'dark';
+---
+
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="min-h-screen flex flex-col bg-white text-[#121212] selection:bg-[#121212] selection:text-white">
+    <!-- Subtle Role / Workspace Quick Switcher Strip -->
+    <div class="no-print bg-[#111110] text-white/75 border-b border-white/10 text-[10px] tracking-[0.12em] uppercase">
+      <div class="max-w-[1380px] mx-auto px-5 md:px-10 py-2 flex flex-wrap items-center justify-between gap-2">
+        <span class="text-white/50 hidden sm:inline">Ekosistem Ruang Visual:</span>
+        <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
+          <a href="/" class="hover:text-white transition">Etalase Publik</a>
+          <span class="text-white/20">/</span>
+          <a href="/portal/RV-2610-001" class="hover:text-white transition">Portal Klien</a>
+          <span class="text-white/20">/</span>
+          <a href="/galeri/arya-nadine" class="hover:text-white transition">Galeri Proofing (PIN: 2408)</a>
+          <span class="text-white/20">/</span>
+          <a href="/crew" class="hover:text-white transition">Portal Crew Freelance</a>
+          <span class="text-white/20">/</span>
+          <a href="/workspace/foto" class="hover:text-white transition">Editor Foto (1 Orang)</a>
+          <span class="text-white/20">/</span>
+          <a href="/workspace/video" class="hover:text-white transition">Editor Video (1 Orang)</a>
+          <span class="text-white/20">/</span>
+          <a href="/admin/percetakan" class="hover:text-white transition">Tracking Cetak</a>
+          <span class="text-white/20">/</span>
+          <a href="/admin" class="text-white font-semibold underline underline-offset-4">Admin & Keuangan →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Squarespace-Inspired Header -->
+    <header
+      class:list={[
+        'no-print sticky top-0 z-40 transition-colors duration-200 border-b',
+        isDark
+          ? 'bg-[#1a1410]/95 backdrop-blur-md text-white border-white/10'
+          : 'bg-white/95 backdrop-blur-md text-[#121212] border-black/10',
+      ]}
+    >
+      <div class="max-w-[1380px] mx-auto px-5 md:px-10 h-[72px] flex items-center justify-between gap-6">
+        <!-- Brand Logo -->
+        <a href="/" class="flex items-center gap-3 group">
+          <span
+            class:list={[
+              'w-6 h-6 inline-flex items-center justify-center border text-[11px] font-semibold tracking-tighter',
+              isDark ? 'border-white text-white' : 'border-[#121212] text-[#121212]',
+            ]}
+          >
+            RV
+          </span>
+          <span class="text-[13px] font-semibold tracking-[0.18em] uppercase">Ruang Visual</span>
+        </a>
+
+        <!-- Center Navigation -->
+        <nav class="hidden lg:flex items-center gap-8 text-[11px] font-medium tracking-[0.15em] uppercase">
+          <a href="/layanan" class="hover:opacity-70 transition">Layanan & Paket</a>
+          <a href="/portofolio" class="hover:opacity-70 transition">Portofolio</a>
+          <a href="/cek-tanggal" class="hover:opacity-70 transition">Cek Tanggal</a>
+          <a href="/galeri/arya-nadine" class="hover:opacity-70 transition">Galeri Klien</a>
+          <a href="/syarat-ketentuan" class="hover:opacity-70 transition">Syarat & Ketentuan</a>
+        </nav>
+
+        <!-- Right Actions -->
+        <div class="flex items-center gap-5">
+          <a
+            href="/portal"
+            class="hidden sm:inline-block text-[11px] font-semibold tracking-[0.14em] uppercase hover:opacity-70 transition"
+          >
+            Lacak Pesanan
+          </a>
+          <a
+            href="/booking"
+            class:list={[
+              'px-5 py-3 text-[11px] font-semibold tracking-[0.14em] uppercase transition',
+              isDark ? 'bg-white text-[#121212] hover:bg-[#e5e4df]' : 'bg-[#121212] text-white hover:bg-[#2c2b29]',
+            ]}
+          >
+            Mulai Booking
+          </a>
+        </div>
+      </div>
+    </header>
+
+    {
+      notice && (
+        <div class="no-print bg-[#1e1d1c] text-white border-b border-white/15 px-5 py-3.5">
+          <div class="max-w-[1380px] mx-auto flex items-center justify-between gap-4 text-xs tracking-wide">
+            <div class="flex items-center gap-3">
+              <span class="inline-block w-2 h-2 bg-emerald-400" />
+              <span>{notice}</span>
+            </div>
+            <button
+              type="button"
+              onclick="this.parentElement.parentElement.remove()"
+              class="text-white/60 hover:text-white uppercase text-[10px] tracking-[0.15em]"
+            >
+              Tutup ✕
+            </button>
+          </div>
+        </div>
+      )
+    }
+
+    <main class="flex-1">
+      <slot />
+    </main>
+
+    <!-- Architectural Dark Footer -->
+    <footer class="no-print bg-[#141413] text-white border-t border-white/10">
+      <div class="max-w-[1380px] mx-auto px-5 md:px-10 py-16 md:py-20">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-10 pb-14 border-b border-white/12">
+          <div class="md:col-span-4 space-y-5">
+            <div class="flex items-center gap-3">
+              <span class="w-6 h-6 inline-flex items-center justify-center border border-white text-[11px] font-semibold">
+                RV
+              </span>
+              <span class="text-[13px] font-semibold tracking-[0.18em] uppercase">Ruang Visual</span>
+            </div>
+            <p class="text-sm text-white/65 leading-relaxed max-w-sm">
+              Vendor dokumentasi Wedding, Prewedding, Wisuda, dan Event dengan alur galeri proofing interaktif, sistem
+              kru terkurasi, serta pelacakan percetakan presisi.
+            </p>
+            <div class="text-xs text-white/50 space-y-1">
+              <p>Studio Ruang Visual — Jl. Kemang Timur No. 42, Jakarta Selatan</p>
+              <p>Senin – Minggu, 09.00 – 20.00 WIB • WhatsApp: 0812-1000-2000</p>
+            </div>
+          </div>
+
+          <div class="md:col-span-2 space-y-3">
+            <p class="eyebrow-label text-white/45">Lini Layanan</p>
+            <ul class="space-y-2.5 text-sm text-white/80">
+              <li><a href="/layanan?kategori=wedding" class="hover:text-white">Wedding</a></li>
+              <li><a href="/layanan?kategori=prewedding" class="hover:text-white">Prewedding</a></li>
+              <li><a href="/layanan?kategori=wisuda" class="hover:text-white">Wisuda Kampus</a></li>
+              <li><a href="/layanan?kategori=event" class="hover:text-white">Engagement & Event</a></li>
+            </ul>
+          </div>
+
+          <div class="md:col-span-3 space-y-3">
+            <p class="eyebrow-label text-white/45">Layanan Klien</p>
+            <ul class="space-y-2.5 text-sm text-white/80">
+              <li><a href="/cek-tanggal" class="hover:text-white">Cek Ketersediaan Tanggal</a></li>
+              <li><a href="/booking" class="hover:text-white">Simulasi Paket & Booking Online</a></li>
+              <li><a href="/portal" class="hover:text-white">Portal Klien & Live Progress</a></li>
+              <li><a href="/galeri/arya-nadine" class="hover:text-white">Demo Galeri Proofing Interaktif</a></li>
+              <li><a href="/syarat-ketentuan" class="hover:text-white">Syarat & Ketentuan (SK-RV-2026.2)</a></li>
+            </ul>
+          </div>
+
+          <div class="md:col-span-3 space-y-3">
+            <p class="eyebrow-label text-white/45">Panel Internal & Tim</p>
+            <ul class="space-y-2.5 text-sm text-white/80">
+              <li><a href="/admin" class="hover:text-white">Admin Command Center</a></li>
+              <li><a href="/admin/keuangan" class="hover:text-white">Keuangan & Job Costing</a></li>
+              <li><a href="/admin/percetakan" class="hover:text-white">Tracking Percetakan 8 Tahap</a></li>
+              <li><a href="/crew" class="hover:text-white">Portal Crew Freelance Lapangan</a></li>
+              <li><a href="/workspace/foto" class="hover:text-white">Workspace Editor Foto</a></li>
+              <li><a href="/workspace/video" class="hover:text-white">Workspace Editor Video</a></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="pt-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs text-white/45">
+          <p>© 2026 Ruang Visual Kreasi. Seluruh hak cipta dilindungi.</p>
+          <p>Astro Fullstack SSR • PostgreSQL • Tailwind CSS • Secured via Cloudflare Tunnel</p>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

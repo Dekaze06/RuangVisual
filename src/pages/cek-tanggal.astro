@@ -1,0 +1,181 @@
+---
+import EditorialLayout from '../layouts/EditorialLayout.astro';
+import { getFullStudioSnapshot, evaluateDateSlot } from '../lib/analytics';
+import { formatShortDate } from '../lib/format';
+
+const snap = await getFullStudioSnapshot();
+const selectedDate = Astro.url.searchParams.get('tanggal') || '2026-11-07';
+const selectedCat = Astro.url.searchParams.get('kategori') || 'wedding';
+
+const slotResult = evaluateDateSlot(snap.bookings, selectedDate);
+
+// Generate upcoming sample Saturdays/Sundays schedule strip
+const sampleDates = [
+  '2026-10-18',
+  '2026-10-22',
+  '2026-11-01',
+  '2026-11-07',
+  '2026-11-14',
+  '2026-11-21',
+  '2026-11-28',
+  '2026-12-05',
+];
+---
+
+<EditorialLayout title="Cek Ketersediaan Tanggal — Ruang Visual" headerTheme="light">
+  <section class="bg-[#f3f2ee] py-16 md:py-24 border-b border-black/10">
+    <div class="max-w-[1380px] mx-auto px-5 md:px-10 space-y-12">
+      <div class="max-w-2xl space-y-4">
+        <p class="eyebrow-label text-[#5e5d59]">Real-Time Availability Engine</p>
+        <h1 class="display-lg">Cek ketersediaan slot liputan</h1>
+        <p class="text-sm text-[#5e5d59] leading-relaxed">
+          Demi menjaga kualitas warna dan ketepatan SLA pada 1 Editor Foto & 1 Editor Video kami, Ruang Visual membatasi
+          maksimal <strong>3 tim liputan lapangan per hari</strong> tanpa menampilkan identitas klien lain demi privasi.
+        </p>
+      </div>
+
+      <!-- Search Form -->
+      <form method="GET" action="/cek-tanggal" class="grid grid-cols-1 md:grid-cols-12 bg-white border border-black/15">
+        <div class="md:col-span-5 p-4 border-b md:border-b-0 md:border-r border-black/10">
+          <label class="block text-[10px] uppercase tracking-[0.14em] text-[#5e5d59] mb-1">Tanggal Rencana Acara</label>
+          <input type="date" name="tanggal" value={selectedDate} required class="w-full text-base font-medium focus:outline-none" />
+        </div>
+        <div class="md:col-span-4 p-4 border-b md:border-b-0 md:border-r border-black/10">
+          <label class="block text-[10px] uppercase tracking-[0.14em] text-[#5e5d59] mb-1">Kategori Layanan</label>
+          <select name="kategori" class="w-full text-base font-medium bg-white focus:outline-none">
+            {
+              snap.categories.map((c) => (
+                <option value={c.slug} selected={c.slug === selectedCat}>
+                  {c.name}
+                </option>
+              ))
+            }
+          </select>
+        </div>
+        <div class="md:col-span-3 flex">
+          <button type="submit" class="btn-sq-black w-full">Periksa Slot →</button>
+        </div>
+      </form>
+
+      <!-- Result Card -->
+      <div class="bg-white border border-black/15 p-8 md:p-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div class="space-y-2">
+          <div class="flex items-center gap-3">
+            <span
+              class:list={[
+                'w-3 h-3 inline-block',
+                slotResult.status === 'AVAILABLE'
+                  ? 'bg-emerald-500'
+                  : slotResult.status === 'LIMITED'
+                    ? 'bg-amber-500'
+                    : 'bg-red-600',
+              ]}
+            />
+            <span class="eyebrow-label">{slotResult.status}</span>
+          </div>
+          <h2 class="text-2xl font-normal tracking-[-0.02em]">
+            {formatShortDate(selectedDate)} — {slotResult.label}
+          </h2>
+          <p class="text-xs md:text-sm text-[#5e5d59]">
+            Antrean aktif saat ini: {snap.photoTasks.filter((t) => t.status !== 'FINALIZED').length} project di meja
+            Editor Foto & {snap.videoTasks.filter((t) => t.mainStatus !== 'FINALIZED').length} project di meja Editor Video.
+          </p>
+        </div>
+
+        {
+          slotResult.remaining > 0 ? (
+            <a href={`/booking?tanggal=${selectedDate}&kategori=${selectedCat}`} class="btn-sq-black shrink-0">
+              Kunci Tanggal Ini Sekarang →
+            </a>
+          ) : (
+            <span class="px-5 py-3 bg-red-50 text-red-800 text-xs font-semibold uppercase tracking-wider">
+              Tanggal Penuh — Pilih Tanggal Lain
+            </span>
+          )
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- Sample Peak Dates Overview + Quick Lead Capture -->
+  <section class="bg-white py-20">
+    <div class="max-w-[1380px] mx-auto px-5 md:px-10 grid grid-cols-1 lg:grid-cols-12 gap-12">
+      <div class="lg:col-span-7 space-y-6">
+        <h3 class="display-md">Ringkasan Tanggal Akhir Pekan Mendatang</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {
+            sampleDates.map((dt) => {
+              const info = evaluateDateSlot(snap.bookings, dt);
+              return (
+                <a
+                  href={`/booking?tanggal=${dt}&kategori=${selectedCat}`}
+                  class="p-5 border border-black/12 hover:border-[#121212] transition flex items-center justify-between gap-3 bg-[#fbfaf7]"
+                >
+                  <div>
+                    <p class="font-medium text-sm">{formatShortDate(dt)}</p>
+                    <p class="text-xs text-[#5e5d59] mt-0.5">{info.label}</p>
+                  </div>
+                  <span
+                    class:list={[
+                      'px-2.5 py-1 text-[10px] uppercase tracking-wider font-semibold',
+                      info.status === 'AVAILABLE'
+                        ? 'bg-emerald-100 text-emerald-900'
+                        : info.status === 'LIMITED'
+                          ? 'bg-amber-100 text-amber-900'
+                          : 'bg-red-100 text-red-900',
+                    ]}
+                  >
+                    {info.status}
+                  </span>
+                </a>
+              );
+            })
+          }
+        </div>
+      </div>
+
+      <!-- Quick Lead Inquiry Form (Saves directly to Admin CRM) -->
+      <div class="lg:col-span-5 bg-[#e5e4df] p-8 space-y-5 border border-black/10">
+        <p class="eyebrow-label text-[#5e5d59]">Konsultasi Konsep & Custom Paket</p>
+        <h3 class="text-xl font-normal tracking-[-0.02em]">Masih tahap diskusi keluarga?</h3>
+        <p class="text-xs text-[#4a4945] leading-relaxed">
+          Tinggalkan kontak Anda agar tim konsultan Ruang Visual mengirimkan rekomendasi paket & jadwal *technical meeting*.
+        </p>
+
+        <form method="POST" action="/api/actions" class="space-y-3">
+          <input type="hidden" name="action" value="create_lead" />
+          <input type="hidden" name="redirectTo" value={`/cek-tanggal?tanggal=${selectedDate}`} />
+          <input
+            type="text"
+            name="prospectName"
+            required
+            placeholder="Nama Anda / Pasangan"
+            class="w-full px-3.5 py-3 bg-white border border-black/15 text-sm"
+          />
+          <input
+            type="tel"
+            name="phone"
+            required
+            placeholder="Nomor WhatsApp Aktif (08xx)"
+            class="w-full px-3.5 py-3 bg-white border border-black/15 text-sm"
+          />
+          <div class="grid grid-cols-2 gap-3">
+            <input type="date" name="targetDate" value={selectedDate} class="px-3.5 py-3 bg-white border border-black/15 text-sm" />
+            <select name="categorySlug" class="px-3.5 py-3 bg-white border border-black/15 text-sm">
+              <option value="wedding">Wedding</option>
+              <option value="prewedding">Prewedding</option>
+              <option value="wisuda">Wisuda</option>
+              <option value="event">Event</option>
+            </select>
+          </div>
+          <textarea
+            name="notes"
+            rows="2"
+            placeholder="Lokasi rencana acara / pertanyaan singkat..."
+            class="w-full px-3.5 py-3 bg-white border border-black/15 text-sm"></textarea>
+          <button type="submit" class="btn-sq-black w-full">Kirim Permintaan Konsultasi</button>
+        </form>
+      </div>
+    </div>
+  </section>
+</EditorialLayout>

@@ -1,0 +1,474 @@
+---
+import EditorialLayout from '../../layouts/EditorialLayout.astro';
+import { getFullStudioSnapshot } from '../../lib/analytics';
+import {
+  formatRupiah,
+  formatShortDate,
+  PROJECT_STAGES,
+  getStageIndex,
+  PHOTO_TASK_LABELS,
+  VIDEO_TASK_LABELS,
+  PRINT_STATUS_LABELS,
+} from '../../lib/format';
+
+const { code } = Astro.params;
+const snap = await getFullStudioSnapshot();
+
+const booking =
+  snap.bookings.find((b) => b.bookingCode.toUpperCase() === (code || '').toUpperCase()) || snap.bookings[0];
+
+const pkg = snap.packages.find((p) => p.id === booking.packageId);
+const gallery = snap.galleries.find((g) => g.bookingId === booking.id);
+const pTask = snap.photoTasks.find((t) => t.bookingId === booking.id);
+const vTask = snap.videoTasks.find((t) => t.bookingId === booking.id);
+const prints = snap.printOrders.filter((p) => p.bookingId === booking.id);
+const bkInvoices = snap.invoices.filter((i) => i.bookingId === booking.id);
+const crews = snap.crewAssignments.filter((c) => c.bookingId === booking.id && c.offerStatus !== 'DECLINED');
+
+const currentStageIdx = getStageIndex(booking.projectStatus);
+const worksheet = JSON.parse(booking.worksheetJson || '{}');
+const videoRevs: Array<{ id: string; timecode: string; note: string; done: boolean }> = vTask
+  ? JSON.parse(vTask.timestampRevisionsJson || '[]')
+  : [];
+const isFullyPaid = booking.paymentStatus === 'PAID';
+---
+
+<EditorialLayout title={`Portal Klien ${booking.bookingCode} — Ruang Visual`} headerTheme="light">
+  <!-- Header Banner -->
+  <section class="bg-[#1e1d1c] text-white py-12 md:py-16">
+    <div class="max-w-[1380px] mx-auto px-5 md:px-10 flex flex-col lg:flex-row lg:items-end justify-between gap-6">
+      <div class="space-y-3">
+        <div class="flex flex-wrap items-center gap-2.5">
+          <span class="font-mono text-xs bg-white text-[#121212] px-2.5 py-1 font-semibold">{booking.bookingCode}</span>
+          <span class="eyebrow-label text-white/65">{pkg?.name}</span>
+          {
+            !booking.allowPortfolioPublish && (
+              <span class="bg-red-700 text-white text-[10px] uppercase tracking-widest px-2.5 py-1 font-semibold">
+                🔒 Private Session — No Public Publish
+              </span>
+            )
+          }
+        </div>
+        <h1 class="display-lg text-white">{booking.eventTitle}</h1>
+        <p class="text-xs md:text-sm text-white/70">
+          {booking.clientName} • {formatShortDate(booking.eventDate)} ({booking.startTime}–{booking.endTime} WIB) •{' '}
+          {booking.venueName}, {booking.venueCity}
+        </p>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3">
+        {
+          gallery && (
+            <a href={`/galeri/${gallery.slug}?pin=${gallery.clientPin}`} class="btn-sq-white">
+              Buka Galeri Proofing (PIN: {gallery.clientPin}) →
+            </a>
+          )
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- 10-Stage Live Progress Pizza-Tracker -->
+  <section class="bg-[#f3f2ee] border-b border-black/10 py-10">
+    <div class="max-w-[1380px] mx-auto px-5 md:px-10 space-y-5">
+      <div class="flex items-center justify-between">
+        <p class="eyebrow-label text-[#121212]">Live Progress Tracker Pengerjaan (10 Tahap)</p>
+        <span class="text-xs font-semibold">
+          Tahap Saat Ini: {PROJECT_STAGES[currentStageIdx]?.label}
+        </span>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-2">
+        {
+          PROJECT_STAGES.map((stage, idx) => {
+            const done = idx < currentStageIdx;
+            const active = idx === currentStageIdx;
+            return (
+              <div
+                class:list={[
+                  'p-3 border text-left transition',
+                  active
+                    ? 'bg-[#121212] text-white border-[#121212]'
+                    : done
+                      ? 'bg-white text-[#121212] border-black/20'
+                      : 'bg-white/50 text-[#8c8b85] border-black/8',
+                ]}
+              >
+                <div class="text-[10px] font-mono opacity-70">{String(idx + 1).padStart(2, '0')}</div>
+                <div class="text-[11px] font-semibold leading-tight mt-1">{stage.short}</div>
+              </div>
+            );
+          })
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Portal Content -->
+  <section class="bg-white py-14">
+    <div class="max-w-[1380px] mx-auto px-5 md:px-10 space-y-12">
+      <!-- Parallel Production Tracks: Photo + Video + Print -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Track 1: Photo Editor -->
+        <div class="border border-black/15 p-6 bg-[#fbfaf7] flex flex-col justify-between gap-5">
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="eyebrow-label text-[#5e5d59]">Track 01 • Editing Foto</span>
+              {
+                pTask?.slaPaused && (
+                  <span class="bg-amber-100 text-amber-900 text-[10px] px-2 py-0.5 font-semibold uppercase">
+                    SLA Auto-Paused
+                  </span>
+                )
+              }
+            </div>
+            <h2 class="text-lg font-medium">
+              {pTask ? PHOTO_TASK_LABELS[pTask.status] || pTask.status : 'Terjadwal'}
+            </h2>
+            <p class="text-xs text-[#5e5d59]">
+              Dedicated Photo Editor: <strong class="text-[#121212]">{pTask?.editorName || 'Dimas Saputra'}</strong> •
+              Target SLA: {formatShortDate(pTask?.slaDueDate || booking.eventDate)}
+            </p>
+            {pTask?.revisionNotes && <p class="text-xs bg-white p-3 border border-black/10">{pTask.revisionNotes}</p>}
+          </div>
+
+          {
+            gallery && (
+              <a href={`/galeri/${gallery.slug}?pin=${gallery.clientPin}`} class="btn-sq-black w-full text-center">
+                Pilih Foto Edit & Review Album →
+              </a>
+            )
+          }
+        </div>
+
+        <!-- Track 2: Video Editor -->
+        <div class="border border-black/15 p-6 bg-[#fbfaf7] flex flex-col justify-between gap-5">
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="eyebrow-label text-[#5e5d59]">Track 02 • Editing Video</span>
+              <span class="text-[10px] font-semibold uppercase bg-[#e5e4df] px-2 py-0.5">
+                Teaser: {vTask?.teaserStatus || 'PENDING'}
+              </span>
+            </div>
+            <h2 class="text-lg font-medium">
+              {vTask ? VIDEO_TASK_LABELS[vTask.mainStatus] || vTask.mainStatus : 'Tidak Termasuk Video'}
+            </h2>
+            {
+              vTask && (
+                <div class="space-y-2 text-xs">
+                  <p class="text-[#5e5d59]">
+                    Dedicated Video Editor: <strong class="text-[#121212]">{vTask.editorName}</strong> • Revisi:{' '}
+                    {vTask.revisionCount}/2x
+                  </p>
+                  {vTask.teaserUrl && (
+                    <a href={vTask.teaserUrl} target="_blank" class="block underline font-medium">
+                      ↗ Buka Video Teaser / Reels 60s
+                    </a>
+                  )}
+                  {vTask.previewUrl && (
+                    <a href={vTask.previewUrl} target="_blank" class="block underline font-medium">
+                      ↗ Buka Preview Cinematic Highlight
+                    </a>
+                  )}
+                </div>
+              )
+            }
+          </div>
+
+          {
+            vTask && (
+              <form method="POST" action="/api/actions" class="pt-3 border-t border-black/10 space-y-2">
+                <input type="hidden" name="action" value="submit_video_revision" />
+                <input type="hidden" name="bookingId" value={booking.id} />
+                <input type="hidden" name="redirectTo" value={`/portal/${booking.bookingCode}`} />
+                <p class="text-[10px] uppercase tracking-wider font-semibold text-[#5e5d59]">
+                  Kirim Catatan Revisi Video (Timestamp)
+                </p>
+                <div class="flex gap-2">
+                  <input
+                    type="text"
+                    name="timecode"
+                    placeholder="01:45"
+                    required
+                    class="w-20 px-2.5 py-2 border border-black/20 text-xs bg-white font-mono"
+                  />
+                  <input
+                    type="text"
+                    name="revisionNote"
+                    placeholder="Catatan bagian yang direvisi..."
+                    required
+                    class="flex-1 px-2.5 py-2 border border-black/20 text-xs bg-white"
+                  />
+                </div>
+                <button type="submit" class="btn-sq-outline-dark w-full !py-2 !text-[10px] cursor-pointer">
+                  Kirim Revisi Video
+                </button>
+              </form>
+            )
+          }
+        </div>
+
+        <!-- Track 3: Print Production & Google Drive Lock -->
+        <div class="border border-black/15 p-6 bg-[#fbfaf7] flex flex-col justify-between gap-5">
+          <div class="space-y-3">
+            <span class="eyebrow-label text-[#5e5d59]">Track 03 • Percetakan & Master File</span>
+            {
+              prints.length > 0 ? (
+                <div class="space-y-3">
+                  {prints.map((po) => (
+                    <div class="bg-white p-3 border border-black/10 space-y-1 text-xs">
+                      <p class="font-semibold">{po.itemName}</p>
+                      <p class="text-[#5e5d59]">
+                        Status: <strong class="text-[#121212]">{PRINT_STATUS_LABELS[po.status]?.label || po.status}</strong>
+                      </p>
+                      {po.trackingResi && (
+                        <p class="font-mono text-[11px] text-emerald-800">
+                          {po.courierName} • Resi: {po.trackingResi}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p class="text-xs text-[#5e5d59]">Paket digital penuh tanpa cetakan fisik.</p>
+              )
+            }
+          </div>
+
+          <!-- Google Drive Master Lock / Unlock -->
+          <div class="pt-3 border-t border-black/10">
+            {
+              isFullyPaid ? (
+                <a
+                  href={gallery?.gdriveMasterUrl || 'https://drive.google.com'}
+                  target="_blank"
+                  class="btn-sq-black w-full text-center"
+                >
+                  ↗ Unduh Master 4K & RAW (Google Drive)
+                </a>
+              ) : (
+                <div class="bg-amber-50 border border-amber-300 p-3 text-xs text-amber-950 space-y-1">
+                  <p class="font-semibold">🔒 Tautan Google Drive Master Terkunci</p>
+                  <p class="text-[11px]">
+                    Sesuai Pasal 02 S&K, unduhan file resolusi penuh tanpa watermark akan terbuka otomatis begitu
+                    pelunasan selesai.
+                  </p>
+                </div>
+              )
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Timestamp Revision History if any -->
+      {
+        videoRevs.length > 0 && (
+          <div class="border border-black/12 p-6 bg-[#f6f4ef] space-y-3">
+            <p class="eyebrow-label text-[#5e5d59]">Riwayat Catatan Revisi Video Klien</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+              {videoRevs.map((rv) => (
+                <div class="bg-white p-3 border border-black/10 flex items-center justify-between gap-3">
+                  <div>
+                    <span class="font-mono font-bold mr-2">[{rv.timecode}]</span>
+                    <span>{rv.note}</span>
+                  </div>
+                  <span
+                    class:list={[
+                      'px-2 py-0.5 text-[10px] font-semibold uppercase',
+                      rv.done ? 'bg-emerald-100 text-emerald-900' : 'bg-amber-100 text-amber-900',
+                    ]}
+                  >
+                    {rv.done ? 'Selesai' : 'Diproses'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      }
+
+      <!-- Two-Column: Invoices & Payments (Left) + Event Worksheet Form (Right) -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        <!-- Invoices & Crew Assigned -->
+        <div class="lg:col-span-6 space-y-8">
+          <div class="border border-black/15 p-6 md:p-8 space-y-5">
+            <div class="flex items-center justify-between border-b border-black/10 pb-4">
+              <h3 class="text-lg font-medium">Tagihan, DP & Pelunasan</h3>
+              <span class="text-xs font-semibold tabular-nums">
+                Terbayar {formatRupiah(booking.paidAmount)} / {formatRupiah(booking.grandTotal)}
+              </span>
+            </div>
+
+            <div class="divide-y divide-black/10">
+              {
+                bkInvoices.map((inv) => (
+                  <div class="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                    <div class="space-y-0.5">
+                      <p class="font-mono font-semibold">{inv.invoiceNumber}</p>
+                      <p class="text-[#5e5d59]">{inv.description}</p>
+                      <p class="text-[11px] text-[#5e5d59]">Jatuh tempo: {formatShortDate(inv.dueDate)}</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                      <span class="text-sm font-semibold tabular-nums">{formatRupiah(inv.amount)}</span>
+                      {inv.status === 'PAID' ? (
+                        <a
+                          href={`/booking/pembayaran/${inv.id}`}
+                          class="px-3 py-1.5 bg-emerald-100 text-emerald-900 text-[10px] font-semibold uppercase"
+                        >
+                          Kwitansi ✓
+                        </a>
+                      ) : inv.status === 'WAITING_VERIFICATION' ? (
+                        <span class="px-3 py-1.5 bg-amber-100 text-amber-900 text-[10px] font-semibold uppercase">
+                          Menunggu Cek Admin
+                        </span>
+                      ) : (
+                        <a href={`/booking/pembayaran/${inv.id}`} class="btn-sq-black !py-2 !px-3.5 !text-[10px]">
+                          Bayar Sekarang →
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))
+              }
+            </div>
+          </div>
+
+          <!-- Assigned Field Crew Info -->
+          <div class="border border-black/15 p-6 md:p-8 space-y-4">
+            <h3 class="text-lg font-medium border-b border-black/10 pb-3">Tim Kru Lapangan yang Bertugas</h3>
+            {
+              crews.length > 0 ? (
+                <div class="space-y-3 text-xs">
+                  {crews.map((ca) => {
+                    const fr = snap.freelancers.find((f) => f.id === ca.freelancerId);
+                    return (
+                      <div class="flex items-center justify-between p-3 bg-[#f6f4ef] border border-black/10">
+                        <div>
+                          <p class="font-semibold">{fr?.name}</p>
+                          <p class="text-[#5e5d59]">
+                            {ca.roleTitle} • Standby {ca.callTime}
+                          </p>
+                        </div>
+                        <span class="text-[10px] uppercase tracking-wider font-semibold">
+                          {ca.checkinAt ? '✓ Hadir di Lokasi' : ca.offerStatus}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p class="text-xs text-[#5e5d59]">
+                  Admin sedang menjadwalkan formasi fotografer & videografer terbaik untuk tanggal acara Anda.
+                </p>
+              )
+            }
+          </div>
+
+          <!-- Client Review / Testimonial -->
+          <div class="border border-black/15 p-6 md:p-8 bg-[#d5d2e2] space-y-4">
+            <h3 class="text-lg font-medium">Ulasan & Testimoni Klien</h3>
+            <form method="POST" action="/api/actions" class="space-y-3 text-xs">
+              <input type="hidden" name="action" value="submit_testimonial" />
+              <input type="hidden" name="bookingId" value={booking.id} />
+              <input type="hidden" name="redirectTo" value={`/portal/${booking.bookingCode}`} />
+              <select name="testimonialRating" class="px-3 py-2 bg-white border border-black/15">
+                <option value="5" selected={booking.testimonialRating === 5}>★★★★★ — Sangat Memuaskan</option>
+                <option value="4" selected={booking.testimonialRating === 4}>★★★★☆ — Memuaskan</option>
+              </select>
+              <textarea
+                name="testimonialText"
+                rows="2"
+                placeholder="Ceritakan pengalaman Anda bersama kru, editor, dan hasil cetakan Ruang Visual..."
+                class="w-full p-3 bg-white border border-black/15">{booking.testimonialText}</textarea>
+              <button type="submit" class="btn-sq-black !py-2.5 !px-5 cursor-pointer">Simpan Testimoni</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Event Worksheet / Brief Form -->
+        <div class="lg:col-span-6 border border-black/15 p-6 md:p-8 space-y-5 bg-[#fbfaf7]">
+          <div class="border-b border-black/10 pb-4">
+            <p class="eyebrow-label text-[#5e5d59]">Technical Brief & Print Spec</p>
+            <h3 class="text-xl font-normal mt-1">Event Worksheet & Konfirmasi Grafir</h3>
+            <p class="text-xs text-[#5e5d59] mt-1">
+              Data yang Anda isi di bawah otomatis diteruskan ke Call Sheet Kru Lapangan, Editor Video, dan Spesifikasi
+              Percetakan Album.
+            </p>
+          </div>
+
+          <form method="POST" action="/api/actions" class="space-y-4 text-xs">
+            <input type="hidden" name="action" value="save_worksheet" />
+            <input type="hidden" name="bookingId" value={booking.id} />
+            <input type="hidden" name="redirectTo" value={`/portal/${booking.bookingCode}`} />
+
+            <div>
+              <label class="block font-semibold mb-1">Kontak WO / Koordinator Keluarga di Lokasi</label>
+              <input
+                type="text"
+                name="woContact"
+                value={worksheet.woContact || ''}
+                placeholder="Nama & Nomor HP PIC di Hari-H"
+                class="w-full px-3.5 py-2.5 bg-white border border-black/20"
+              />
+            </div>
+
+            <div>
+              <label class="block font-semibold mb-1">Daftar Foto Keluarga Inti / VIP Wajib</label>
+              <textarea
+                name="vipFamilyList"
+                rows="2"
+                placeholder="Daftar anggota keluarga atau tamu penting yang wajib terfoto..."
+                class="w-full px-3.5 py-2.5 bg-white border border-black/20">{worksheet.vipFamilyList || ''}</textarea>
+            </div>
+
+            <div>
+              <label class="block font-semibold mb-1">Referensi Lagu Backsound untuk Editor Video</label>
+              <input
+                type="text"
+                name="songReference"
+                value={worksheet.songReference || ''}
+                placeholder="Judul lagu / nuansa musik favorit Anda"
+                class="w-full px-3.5 py-2.5 bg-white border border-black/20"
+              />
+            </div>
+
+            <div>
+              <label class="block font-semibold mb-1">
+                Teks Grafir / Emboss Cover Album & Box Kayu (Pastikan Ejaan Tepat)
+              </label>
+              <input
+                type="text"
+                name="engravingText"
+                value={worksheet.engravingText || ''}
+                placeholder="Contoh: Arya & Nadine — 18.10.2026"
+                class="w-full px-3.5 py-2.5 bg-white border border-black/20 font-medium"
+              />
+            </div>
+
+            <div>
+              <label class="block font-semibold mb-1">Alamat Lengkap Pengiriman Cetakan Album / Frame</label>
+              <textarea
+                name="shippingAddress"
+                rows="2"
+                placeholder="Nama penerima, jalan, nomor rumah, kecamatan, kota, kode pos..."
+                class="w-full px-3.5 py-2.5 bg-white border border-black/20">{worksheet.shippingAddress || ''}</textarea>
+            </div>
+
+            <div>
+              <label class="block font-semibold mb-1">Catatan Khusus / Rundown Penting</label>
+              <textarea
+                name="specialNotes"
+                rows="3"
+                placeholder="Detail momen sakral, adat khusus, atau request angle..."
+                class="w-full px-3.5 py-2.5 bg-white border border-black/20">{worksheet.specialNotes || ''}</textarea>
+            </div>
+
+            <button type="submit" class="btn-sq-black w-full cursor-pointer">
+              Simpan Event Worksheet & Sinkronkan ke Tim →
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+</EditorialLayout>

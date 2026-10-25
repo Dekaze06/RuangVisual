@@ -1,0 +1,172 @@
+---
+import EditorialLayout from '../layouts/EditorialLayout.astro';
+import { getFullStudioSnapshot } from '../lib/analytics';
+import { formatRupiah } from '../lib/format';
+
+const snap = await getFullStudioSnapshot();
+const selectedCat = Astro.url.searchParams.get('kategori') || 'all';
+
+const filteredPackages =
+  selectedCat === 'all' ? snap.packages : snap.packages.filter((p) => p.categorySlug === selectedCat);
+---
+
+<EditorialLayout
+  title="Layanan & Pricelist — Ruang Visual"
+  headerTheme="light"
+>
+  <section class="bg-[#1e1d1c] text-white py-20 md:py-24">
+    <div class="max-w-[1380px] mx-auto px-5 md:px-10 space-y-6">
+      <p class="eyebrow-label text-white/55">Katalog Layanan & Harga Transparan</p>
+      <h1 class="display-xl text-white max-w-3xl">
+        Paket dokumentasi<br />tanpa biaya tersembunyi
+      </h1>
+      <p class="text-sm md:text-base text-white/70 max-w-xl leading-relaxed">
+        Setiap paket sudah mencakup kurasi Galeri Proofing Interaktif, penyimpanan Google Drive, serta kendali mutu
+        cetakan fisik di studio.
+      </p>
+    </div>
+  </section>
+
+  <!-- Category Filter Strip -->
+  <section class="bg-[#f3f2ee] border-b border-black/10 sticky top-[72px] z-30">
+    <div class="max-w-[1380px] mx-auto px-5 md:px-10 py-4 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex flex-wrap items-center gap-2">
+        <a
+          href="/layanan"
+          class:list={[
+            'px-4 py-2 text-[11px] uppercase tracking-[0.14em] font-semibold border transition',
+            selectedCat === 'all'
+              ? 'bg-[#121212] text-white border-[#121212]'
+              : 'bg-white text-[#121212] border-black/15 hover:border-[#121212]',
+          ]}
+        >
+          Semua Kategori
+        </a>
+        {
+          snap.categories.map((c) => (
+            <a
+              href={`/layanan?kategori=${c.slug}`}
+              class:list={[
+                'px-4 py-2 text-[11px] uppercase tracking-[0.14em] font-semibold border transition',
+                selectedCat === c.slug
+                  ? 'bg-[#121212] text-white border-[#121212]'
+                  : 'bg-white text-[#121212] border-black/15 hover:border-[#121212]',
+              ]}
+            >
+              {c.name}
+            </a>
+          ))
+        }
+      </div>
+
+      <span class="text-xs text-[#5e5d59]">
+        Kode Promo Aktif: <strong class="text-[#121212]">WEDDINGFAIR</strong> • <strong class="text-[#121212]">WISUDA26</strong>
+      </span>
+    </div>
+  </section>
+
+  <!-- Packages Architectural Grid -->
+  <section class="bg-white py-16 md:py-24">
+    <div class="max-w-[1380px] mx-auto px-5 md:px-10 space-y-20">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {
+          filteredPackages.map((pkg) => (
+            <article class="border border-black/15 bg-[#fbfaf7] p-8 md:p-10 flex flex-col justify-between gap-8 hover:border-[#121212] transition">
+              <div class="space-y-6">
+                <div class="flex items-start justify-between gap-4 border-b border-black/10 pb-5">
+                  <div>
+                    <span class="eyebrow-label text-[#5e5d59]">{pkg.categorySlug}</span>
+                    <h2 class="text-2xl font-normal tracking-[-0.025em] mt-1">{pkg.name}</h2>
+                  </div>
+                  {pkg.isFeatured && (
+                    <span class="bg-[#121212] text-white text-[9px] uppercase tracking-[0.15em] px-2.5 py-1 font-semibold">
+                      Terpopuler
+                    </span>
+                  )}
+                </div>
+
+                <div>
+                  <p class="text-3xl font-normal tracking-[-0.03em] tabular-nums">{formatRupiah(pkg.price)}</p>
+                  <p class="text-xs text-[#5e5d59] mt-1">
+                    Durasi Liputan {pkg.durationHours} Jam • SLA Foto {pkg.slaDaysPhoto} Hari Kerja
+                  </p>
+                </div>
+
+                <dl class="space-y-3 text-xs md:text-sm border-t border-black/10 pt-5">
+                  <div class="grid grid-cols-12 gap-2">
+                    <dt class="col-span-4 text-[#5e5d59]">Formasi Kru</dt>
+                    <dd class="col-span-8 font-medium">{pkg.crewSummary}</dd>
+                  </div>
+                  <div class="grid grid-cols-12 gap-2">
+                    <dt class="col-span-4 text-[#5e5d59]">Kuota Foto Edit</dt>
+                    <dd class="col-span-8 font-medium">
+                      {pkg.editedPhotoQuota} Foto Retouch {pkg.albumPhotoQuota > 0 ? `(${pkg.albumPhotoQuota} Masuk Album)` : ''}
+                    </dd>
+                  </div>
+                  <div class="grid grid-cols-12 gap-2">
+                    <dt class="col-span-4 text-[#5e5d59]">Output Video</dt>
+                    <dd class="col-span-8">{pkg.videoDeliverables}</dd>
+                  </div>
+                  <div class="grid grid-cols-12 gap-2">
+                    <dt class="col-span-4 text-[#5e5d59]">Produk Cetak</dt>
+                    <dd class="col-span-8 font-medium">{pkg.printDeliverables}</dd>
+                  </div>
+                </dl>
+              </div>
+
+              <div class="pt-4 flex flex-wrap items-center justify-between gap-4 border-t border-black/10">
+                <a href="/cek-tanggal" class="text-xs uppercase tracking-[0.13em] underline underline-offset-4">
+                  Cek Slot Tanggal
+                </a>
+                <a href={`/booking?paket=${pkg.id}`} class="btn-sq-black">
+                  Pilih & Kustomisasi →
+                </a>
+              </div>
+            </article>
+          ))
+        }
+      </div>
+
+      <!-- Add-ons & Zona Transport Table -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 pt-12 border-t border-black/12">
+        <div class="lg:col-span-7 space-y-5">
+          <h3 class="display-md">Add-on & Layanan Tambahan</h3>
+          <div class="border border-black/12 divide-y divide-black/10">
+            {
+              snap.addons.map((ad) => (
+                <div class="p-4 bg-white flex items-center justify-between gap-4 text-sm">
+                  <div>
+                    <p class="font-medium">{ad.name}</p>
+                    <p class="text-xs text-[#5e5d59] uppercase tracking-wider">{ad.unitLabel} • Kategori: {ad.categorySlug}</p>
+                  </div>
+                  <p class="font-semibold tabular-nums">{formatRupiah(ad.price)}</p>
+                </div>
+              ))
+            }
+          </div>
+        </div>
+
+        <div class="lg:col-span-5 space-y-5">
+          <h3 class="display-md">Zona Transportasi Kru</h3>
+          <div class="border border-black/12 divide-y divide-black/10 bg-[#f6f4ef]">
+            {
+              snap.zones.map((z) => (
+                <div class="p-4 flex items-center justify-between gap-4 text-sm">
+                  <div>
+                    <p class="font-medium">{z.regionName}</p>
+                    {z.requiresAccommodation && (
+                      <p class="text-[11px] text-[#5e5d59]">Memerlukan akomodasi menginap kru</p>
+                    )}
+                  </div>
+                  <p class="font-semibold tabular-nums">
+                    {z.transportFee === 0 ? 'Gratis' : formatRupiah(z.transportFee)}
+                  </p>
+                </div>
+              ))
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</EditorialLayout>

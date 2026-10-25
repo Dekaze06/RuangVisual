@@ -1,0 +1,217 @@
+---
+import BackofficeLayout from '../../layouts/BackofficeLayout.astro';
+import { getFullStudioSnapshot } from '../../lib/analytics';
+import { formatRupiah, PRINT_STATUS_LABELS } from '../../lib/format';
+
+const snap = await getFullStudioSnapshot();
+
+const waitingDesign = snap.printOrders.filter((p) =>
+  ['WAITING_SELECTION', 'LAYOUTING', 'WAITING_CLIENT_APPROVAL', 'READY_TO_PRINT'].includes(p.status)
+);
+const inLab = snap.printOrders.filter((p) =>
+  ['SENT_TO_VENDOR', 'IN_PRODUCTION', 'REPRINT_COMPLAINT'].includes(p.status)
+);
+const inQc = snap.printOrders.filter((p) => p.status === 'ARRIVED_QC');
+const doneOrShipped = snap.printOrders.filter((p) =>
+  ['READY_FOR_HANDOVER', 'SHIPPED', 'DELIVERED'].includes(p.status)
+);
+---
+
+<BackofficeLayout
+  title="Sistem Tracking Percetakan & Quality Control (8 Tahap)"
+  subtitle="Kendali penuh produksi Album, Frame, Kanvas, & Box Kayu dari persetujuan layout klien, PO Lab Cetak, QC fisik studio, hingga resi."
+  activeNav="printing"
+>
+  <!-- Pipeline Stage Summary -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+    <div class="bg-white border border-black/12 p-5">
+      <p class="eyebrow-label text-[#5e5d59]">Tahap 1–4: Pra-Cetak & Approval</p>
+      <p class="text-3xl font-normal mt-1">{waitingDesign.length} Item</p>
+      <p class="text-[11px] text-[#5e5d59] mt-1">Termasuk pengaman Print Approval Lock</p>
+    </div>
+    <div class="bg-white border border-black/12 p-5">
+      <p class="eyebrow-label text-amber-800">Tahap 5–6: Sedang di Lab Cetak</p>
+      <p class="text-3xl font-normal mt-1 text-amber-900">{inLab.length} Item</p>
+      <p class="text-[11px] text-[#5e5d59] mt-1">Proses cetak, jilid layflat, & grafir laser</p>
+    </div>
+    <div class="bg-[#d5d2e2] border border-black/12 p-5">
+      <p class="eyebrow-label text-[#121212]">Tahap 7: Tiba di Studio (QC Fisik)</p>
+      <p class="text-3xl font-normal mt-1">{inQc.length} Item</p>
+      <p class="text-[11px] text-[#32303a] mt-1">Wajib cek warna, kaca frame & ejaan grafir</p>
+    </div>
+    <div class="bg-white border border-black/12 p-5">
+      <p class="eyebrow-label text-emerald-800">Tahap 8: Siap Serah Terima / Terkirim</p>
+      <p class="text-3xl font-normal mt-1 text-emerald-900">{doneOrShipped.length} Item</p>
+      <p class="text-[11px] text-[#5e5d59] mt-1">Self-pickup di studio / kurir ber-resi</p>
+    </div>
+  </div>
+
+  <!-- Mitra Lab Percetakan Strip -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    {
+      snap.printVendors.map((v) => (
+        <div class="bg-white border border-black/12 p-4 text-xs flex items-center justify-between gap-3">
+          <div>
+            <p class="font-semibold text-sm">{v.name}</p>
+            <p class="text-[#5e5d59] text-[11px]">{v.specialty}</p>
+            <p class="text-[#5e5d59] text-[11px]">
+              {v.city} • Lead Time ~{v.leadTimeDays} Hari • WA {v.whatsapp}
+            </p>
+          </div>
+          <div class="text-right shrink-0">
+            <span class="text-[10px] uppercase text-[#5e5d59] block">Saldo Deposit</span>
+            <strong class="tabular-nums">{formatRupiah(v.depositBalance)}</strong>
+          </div>
+        </div>
+      ))
+    }
+  </div>
+
+  <!-- 8-Stage Print Order Cards -->
+  <div class="space-y-5">
+    <h2 class="text-lg font-medium">Daftar Order Percetakan & Pengiriman Fisik</h2>
+
+    {
+      snap.printOrders.map((po) => {
+        const bk = snap.bookings.find((b) => b.id === po.bookingId);
+        const vendor = snap.printVendors.find((v) => v.id === po.vendorId);
+        const isClientUnpaid = bk && bk.paymentStatus !== 'PAID';
+
+        return (
+          <div class="bg-white border border-black/15 p-6 space-y-5">
+            <div class="flex flex-wrap items-start justify-between gap-4 border-b border-black/10 pb-4">
+              <div class="space-y-1">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="font-mono text-xs font-semibold bg-[#f3f2ee] px-2.5 py-0.5">{bk?.bookingCode}</span>
+                  <span class="text-[10px] uppercase tracking-wider font-semibold text-[#5e5d59]">{po.itemType}</span>
+                  {po.itemType === 'ALBUM' && !po.layoutApproved ? (
+                    <span class="bg-red-100 text-red-900 border border-red-300 text-[10px] font-bold uppercase px-2 py-0.5">
+                      🔒 Layout Belum Disetujui Klien (Locked)
+                    </span>
+                  ) : (
+                    <span class="bg-emerald-50 text-emerald-900 border border-emerald-200 text-[10px] font-semibold uppercase px-2 py-0.5">
+                      ✓ Siap / Approved Cetak
+                    </span>
+                  )}
+                  {isClientUnpaid && (
+                    <span class="bg-amber-100 text-amber-950 border border-amber-300 text-[10px] font-bold uppercase px-2 py-0.5">
+                      ⚠ Klien Belum Lunas ({bk?.paymentStatus}) — Tahan Serah Terima!
+                    </span>
+                  )}
+                </div>
+                <h3 class="text-xl font-normal">{po.itemName}</h3>
+                <p class="text-xs text-[#5e5d59]">
+                  Klien: <strong>{bk?.clientName}</strong> • Spesifikasi: {po.specs}
+                </p>
+              </div>
+
+              <div class="text-right space-y-1">
+                <span class="inline-block px-3 py-1 bg-[#181817] text-white text-[10px] uppercase tracking-[0.13em] font-semibold">
+                  {PRINT_STATUS_LABELS[po.status]?.label || po.status}
+                </span>
+                <p class="text-xs text-[#5e5d59]">
+                  HPP Lab: <strong class="text-[#121212] tabular-nums">{formatRupiah(po.hppCost)}</strong> (
+                  {po.vendorPaid ? 'Lunas ke Lab' : 'Hutang Lab'})
+                </p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-[#f6f4ef] p-4 text-xs border border-black/8">
+              <div>
+                <span class="text-[10px] uppercase text-[#5e5d59] block">Teks Grafir / Emboss Terkunci</span>
+                <strong class="font-mono">{po.engravingText || '-'}</strong>
+              </div>
+              <div>
+                <span class="text-[10px] uppercase text-[#5e5d59] block">Mitra Lab & Nomor PO</span>
+                <strong>{vendor?.name}</strong> • PO: {po.vendorPoNo || 'Belum Terbit'}
+              </div>
+              <div>
+                <span class="text-[10px] uppercase text-[#5e5d59] block">Status QC & Pengiriman</span>
+                <span>
+                  {po.qcPassed ? '✓ Lolos QC Studio' : 'Belum Lolos QC'}{' '}
+                  {po.trackingResi ? `• Resi: ${po.trackingResi}` : ''}
+                </span>
+              </div>
+            </div>
+
+            {/* Interactive Print Pipeline Form */}
+            <form method="POST" action="/api/actions" class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end text-xs">
+              <input type="hidden" name="action" value="update_print_order" />
+              <input type="hidden" name="printOrderId" value={po.id} />
+              <input type="hidden" name="redirectTo" value="/admin/percetakan" />
+
+              <div class="md:col-span-3">
+                <label class="block text-[10px] uppercase text-[#5e5d59] mb-1">Tahap Tracking Cetak</label>
+                <select name="status" class="w-full px-2.5 py-2.5 border border-black/20 bg-white">
+                  {Object.entries(PRINT_STATUS_LABELS).map(([k, info]) => (
+                    <option value={k} selected={po.status === k}>
+                      {info.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div class="md:col-span-2">
+                <label class="block text-[10px] uppercase text-[#5e5d59] mb-1">Mitra Lab Cetak</label>
+                <select name="vendorId" class="w-full px-2.5 py-2.5 border border-black/20 bg-white">
+                  {snap.printVendors.map((v) => (
+                    <option value={v.id} selected={po.vendorId === v.id}>
+                      {v.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div class="md:col-span-2">
+                <label class="block text-[10px] uppercase text-[#5e5d59] mb-1">No. PO Lab / HPP</label>
+                <input
+                  type="text"
+                  name="vendorPoNo"
+                  value={po.vendorPoNo}
+                  placeholder="PO-ART-2610-XX"
+                  class="w-full px-2.5 py-2.5 border border-black/20 bg-white"
+                />
+              </div>
+
+              <div class="md:col-span-3">
+                <label class="block text-[10px] uppercase text-[#5e5d59] mb-1">
+                  Catatan QC Fisik / Kurir & No. Resi
+                </label>
+                <div class="flex gap-1.5">
+                  <input
+                    type="text"
+                    name="qcNotes"
+                    value={po.qcNotes}
+                    placeholder="Hasil cek QC..."
+                    class="w-1/2 px-2.5 py-2.5 border border-black/20 bg-white"
+                  />
+                  <input
+                    type="text"
+                    name="trackingResi"
+                    value={po.trackingResi}
+                    placeholder="JNE / Gosend Resi"
+                    class="w-1/2 px-2.5 py-2.5 border border-black/20 bg-white"
+                  />
+                </div>
+              </div>
+
+              <div class="md:col-span-2 flex flex-col gap-1.5">
+                {po.itemType === 'ALBUM' && !po.layoutApproved && (
+                  <input
+                    type="text"
+                    name="adminOverrideNote"
+                    placeholder="Alasan Override Lock..."
+                    class="w-full px-2 py-1.5 border border-red-300 bg-red-50/40 text-[11px]"
+                  />
+                )}
+                <button type="submit" class="btn-sq-black w-full !py-2.5 !px-3 !text-[10px] cursor-pointer">
+                  Update Status →
+                </button>
+              </div>
+            </form>
+          </div>
+        );
+      })
+    }
+  </div>
+</BackofficeLayout>

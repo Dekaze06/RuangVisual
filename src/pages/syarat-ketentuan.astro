@@ -1,0 +1,51 @@
+---
+import EditorialLayout from '../layouts/EditorialLayout.astro';
+import { getFullStudioSnapshot } from '../lib/analytics';
+
+const snap = await getFullStudioSnapshot();
+const currentTerms = snap.terms[0];
+const clauses: Array<{ no: string; heading: string; body: string }> = currentTerms
+  ? JSON.parse(currentTerms.clausesJson)
+  : [];
+---
+
+<EditorialLayout title="Syarat & Ketentuan Resmi — Ruang Visual" headerTheme="light">
+  <section class="bg-[#1e1d1c] text-white py-20">
+    <div class="max-w-[1380px] mx-auto px-5 md:px-10 space-y-4">
+      <p class="eyebrow-label text-white/55">Dokumen Kontrak Berversi • {currentTerms?.versionCode}</p>
+      <h1 class="display-lg text-white max-w-3xl">{currentTerms?.title}</h1>
+      <p class="text-xs md:text-sm text-white/65 max-w-2xl leading-relaxed">
+        Diperbarui pada {currentTerms?.updatedAt}. Setiap booking yang ditandatangani secara digital akan menyimpan
+        salinan tetap (*immutable snapshot*) dari versi dokumen ini untuk kepastian hukum kedua belah pihak.
+      </p>
+    </div>
+  </section>
+
+  <section class="bg-white py-16 md:py-24">
+    <div class="max-w-[1040px] mx-auto px-5 md:px-10 space-y-10">
+      <div class="divide-y divide-black/12 border-t border-b border-black/12">
+        {
+          clauses.map((c) => (
+            <div class="py-8 grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-8">
+              <div class="md:col-span-4">
+                <span class="text-xs font-mono text-[#5e5d59]">PASAL {c.no}</span>
+                <h2 class="text-lg font-medium tracking-[-0.015em] mt-1">{c.heading}</h2>
+              </div>
+              <div class="md:col-span-8">
+                <p class="text-sm text-[#3c3b38] leading-relaxed">{c.body}</p>
+              </div>
+            </div>
+          ))
+        }
+      </div>
+
+      <div class="bg-[#f3f2ee] p-8 border border-black/10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div class="space-y-1">
+          <p class="text-sm font-semibold">Siap melanjutkan penguncian tanggal acara Anda?</p>
+          <p class="text-xs text-[#5e5d59]">Tanda tangan kontrak digital dilakukan langsung pada langkah akhir Booking.</p>
+        </div>
+        <a href="/booking" class="btn-sq-black shrink-0">Lanjut ke Booking →</a>
+      </div>
+    </div>
+  </section>
+</EditorialLayout>

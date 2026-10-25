@@ -1,0 +1,42 @@
+services:
+  app:
+    build: .
+    container_name: ruang-visual-web
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - HOST=0.0.0.0
+      - PORT=4321
+      - DATABASE_URL=postgresql://ruangvisual:${POSTGRES_PASSWORD:-ruangvisual_secret}@postgres:5432/ruang_visual
+    volumes:
+      - ./storage:/app/public/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: ruang-visual-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=ruangvisual
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-ruangvisual_secret}
+      - POSTGRES_DB=ruang_visual
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ruangvisual -d ruang_visual"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: ruang-visual-tunnel
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on:
+      - app
+
+volumes:
+  pgdata:

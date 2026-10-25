@@ -1,0 +1,196 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --sq-espresso: #1a1410;
+    --sq-offwhite: #f3f2ee;
+    --sq-stone: #e5e4df;
+    --sq-obsidian: #1e1d1c;
+    --sq-charcoal: #262523;
+    --sq-lavender: #d5d2e2;
+    --sq-alabaster: #f6f4ef;
+    --sq-ink: #121212;
+    --sq-muted: #5e5d59;
+  }
+
+  html {
+    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: var(--sq-ink);
+    background-color: #ffffff;
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Architectural sharp inputs & selects */
+  input,
+  select,
+  textarea,
+  button {
+    border-radius: 0px;
+  }
+}
+
+/* Monumental Squarespace-style Editorial Typography */
+.display-hero {
+  font-size: clamp(2.6rem, 5.2vw, 4.5rem);
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+  font-weight: 400;
+}
+
+.display-xl {
+  font-size: clamp(2.85rem, 6.4vw, 5.5rem);
+  line-height: 0.97;
+  letter-spacing: -0.04em;
+  font-weight: 400;
+}
+
+.display-lg {
+  font-size: clamp(2rem, 3.8vw, 3.25rem);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  font-weight: 400;
+}
+
+.display-md {
+  font-size: clamp(1.45rem, 2.4vw, 2.15rem);
+  line-height: 1.14;
+  letter-spacing: -0.025em;
+  font-weight: 400;
+}
+
+.eyebrow-label {
+  font-size: 0.6875rem;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+/* Sharp Architectural Buttons */
+.btn-sq-white {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  background-color: #ffffff;
+  color: #121212;
+  padding: 0.95rem 1.75rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  transition: background-color 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+}
+
+.btn-sq-white:hover {
+  background-color: #e8e6e1;
+}
+
+.btn-sq-black {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  background-color: #121212;
+  color: #ffffff;
+  padding: 0.95rem 1.75rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+
+.btn-sq-black:hover {
+  background-color: #2e2d2b;
+}
+
+.btn-sq-outline-dark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  border: 1px solid rgba(18, 18, 18, 0.28);
+  background-color: transparent;
+  color: #121212;
+  padding: 0.85rem 1.5rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  transition: all 0.2s ease;
+}
+
+.btn-sq-outline-dark:hover {
+  border-color: #121212;
+  background-color: #121212;
+  color: #ffffff;
+}
+
+.btn-sq-outline-light {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background-color: transparent;
+  color: #ffffff;
+  padding: 0.85rem 1.5rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  transition: all 0.2s ease;
+}
+
+.btn-sq-outline-light:hover {
+  border-color: #ffffff;
+  background-color: #ffffff;
+  color: #121212;
+}
+
+.link-sq-arrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid currentColor;
+  transition: opacity 0.2s ease, gap 0.2s ease;
+}
+
+.link-sq-arrow:hover {
+  opacity: 0.72;
+  gap: 0.75rem;
+}
+
+/* Watermark pattern for Client Gallery Proofing */
+.watermark-overlay {
+  background-image: repeating-linear-gradient(
+    -32deg,
+    rgba(255, 255, 255, 0.0) 0px,
+    rgba(255, 255, 255, 0.0) 90px,
+    rgba(255, 255, 255, 0.06) 90px,
+    rgba(255, 255, 255, 0.06) 92px
+  );
+}
+
+/* Hide scrollbar for editorial carousels while keeping scroll */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
